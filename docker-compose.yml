@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./server
+    container_name: api
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - MONGO_URI=mongodb://root:password@mongo:27017/mern-db?authSource=admin
+      - JWT_SECRET=supersecretkey
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    # command: npm run dev
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
