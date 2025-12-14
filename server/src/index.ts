@@ -12,6 +12,8 @@ import { useServer } from 'graphql-ws/lib/use/ws';
 import { typeDefs } from './graphql/typeDefs';
 import { resolvers } from './graphql/resolvers';
 import { getContextUser } from './middleware/auth';
+import { initGridFS } from './utils/gridfs';
+import uploadRoutes from './routes/upload';
 
 dotenv.config();
 
@@ -39,6 +41,9 @@ const startServer = async () => {
     };
 
     await connectDB();
+
+    // Initialize GridFS for file uploads
+    initGridFS();
 
     const schema = makeExecutableSchema({ typeDefs, resolvers });
 
@@ -75,7 +80,7 @@ const startServer = async () => {
         ],
         formatError: (formattedError, _error) => {
             console.error('GraphQL Error:', formattedError);
-            
+
             return {
                 message: formattedError.message,
                 extensions: formattedError.extensions,
@@ -86,14 +91,19 @@ const startServer = async () => {
     await server.start();
 
     const corsOptions = {
-        origin: process.env.CLIENT_URL || 'http://localhost:3000',
+        origin: true, // Allow all origins in development
         credentials: true,
     };
 
+    // Enable CORS and JSON parsing for all routes
+    app.use(cors<cors.CorsRequest>(corsOptions));
+    app.use(express.json());
+
+    // Upload routes (REST API for file uploads)
+    app.use('/api/upload', uploadRoutes);
+
     app.use(
         '/graphql',
-        cors<cors.CorsRequest>(corsOptions),
-        express.json(),
         expressMiddleware(server, {
             context: async ({ req }) => {
                 const user = getContextUser(req);
@@ -111,7 +121,8 @@ const startServer = async () => {
     httpServer.listen(PORT, () => {
         console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
         console.log(`🔌 Subscriptions ready at ws://localhost:${PORT}/graphql`);
-        console.log(`📊 Health check at http://localhost:${PORT}/health`);
+        console.log(`� Upload API at http://localhost:${PORT}/api/upload`);
+        console.log(`�📊 Health check at http://localhost:${PORT}/health`);
         console.log(`🔐 JWT_SECRET is ${process.env.JWT_SECRET ? 'configured' : 'using default (UNSAFE!)'}`);
     });
 };

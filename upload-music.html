@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Upload - MERN Playlist</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="file"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px;
+            background: #f5f5f5;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #e8eaf6;
+            border-color: #764ba2;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .token-input {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .file-id {
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .info-box strong {
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Upload Music</h1>
+        <p class="subtitle">Upload your audio files to GridFS</p>
+
+        <div class="info-box">
+            <strong>📝 Note:</strong> First, login via GraphQL and copy your JWT token. Then paste it below to upload music files.
+        </div>
+
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="token">🔐 JWT Token (from login/register)</label>
+                <input type="text" id="token" class="token-input" placeholder="Paste your JWT token here" required>
+            </div>
+
+            <div class="form-group">
+                <label for="title">🎼 Song Title</label>
+                <input type="text" id="title" placeholder="e.g., Bohemian Rhapsody" required>
+            </div>
+
+            <div class="form-group">
+                <label for="artist">🎤 Artist</label>
+                <input type="text" id="artist" placeholder="e.g., Queen" required>
+            </div>
+
+            <div class="form-group">
+                <label for="duration">⏱️ Duration (seconds)</label>
+                <input type="number" id="duration" placeholder="e.g., 354" required min="1">
+            </div>
+
+            <div class="form-group">
+                <label>🎧 Audio File</label>
+                <div class="file-input-wrapper">
+                    <label for="audioFile" class="file-input-label">
+                        📁 Click to select audio file (MP3, WAV, OGG, FLAC)
+                    </label>
+                    <input type="file" id="audioFile" accept="audio/*" required>
+                </div>
+                <div class="file-name" id="fileName"></div>
+            </div>
+
+            <button type="submit" id="submitBtn">Upload Music 🚀</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #667eea;">Uploading...</p>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:4000';
+
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('audioFile');
+        const fileNameDisplay = document.getElementById('fileName');
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Display selected file name
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const token = document.getElementById('token').value.trim();
+            const title = document.getElementById('title').value.trim();
+            const artist = document.getElementById('artist').value.trim();
+            const duration = document.getElementById('duration').value;
+            const audioFile = fileInput.files[0];
+
+            if (!audioFile) {
+                showResult('error', 'Please select an audio file');
+                return;
+            }
+
+            // Show loading
+            loadingDiv.classList.add('active');
+            submitBtn.disabled = true;
+            resultDiv.style.display = 'none';
+
+            try {
+                const formData = new FormData();
+                formData.append('audio', audioFile);
+                formData.append('title', title);
+                formData.append('artist', artist);
+                formData.append('duration', duration);
+
+                const response = await fetch(`${API_URL}/api/upload/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult('success', 'Upload Successful! 🎉', `
+                        <div class="result-title">File uploaded successfully!</div>
+                        <p><strong>File ID:</strong></p>
+                        <div class="file-id">${data.fileId}</div>
+                        <p style="margin-top: 10px;"><strong>Filename:</strong> ${data.filename}</p>
+                        <p><strong>Size:</strong> ${(data.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <p style="margin-top: 15px; color: #155724;">
+                            ✅ Now you can use this fileId in your GraphQL createSong mutation!
+                        </p>
+                    `);
+                    form.reset();
+                    fileNameDisplay.textContent = '';
+                } else {
+                    showResult('error', 'Upload Failed', data.error || 'Unknown error occurred');
+                }
+            } catch (error) {
+                showResult('error', 'Network Error', error.message);
+            } finally {
+                loadingDiv.classList.remove('active');
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showResult(type, title, content) {
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = typeof content === 'string' ? content : `<div class="result-title">${title}</div><p>${content}</p>`;
+        }
+    </script>
+</body>
+</html>

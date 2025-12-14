@@ -3,10 +3,19 @@ import jwt from 'jsonwebtoken';
 import { GraphQLError } from 'graphql';
 import { PubSub } from 'graphql-subscriptions';
 import User, { IUser } from '../models/User';
+import Playlist, { IPlaylist } from '../models/Playlist';
+import Song, { ISong } from '../models/Song';
+import PlaylistSong, { IPlaylistSong } from '../models/PlaylistSong';
+import Contributor, { IContributor, ContributorRole } from '../models/Contributor';
 
 const pubsub = new PubSub();
 
+// Subscription events
 const USER_CREATED = 'USER_CREATED';
+const PLAYLIST_UPDATED = 'PLAYLIST_UPDATED';
+const SONG_ADDED_TO_PLAYLIST = 'SONG_ADDED_TO_PLAYLIST';
+const SONG_REMOVED_FROM_PLAYLIST = 'SONG_REMOVED_FROM_PLAYLIST';
+const CONTRIBUTOR_ADDED = 'CONTRIBUTOR_ADDED';
 
 interface Context {
     user?: {
@@ -28,6 +37,31 @@ interface LoginInput {
     password: string;
 }
 
+interface CreatePlaylistInput {
+    title: string;
+    description?: string;
+    isPublic?: boolean;
+}
+
+interface UpdatePlaylistInput {
+    title?: string;
+    description?: string;
+    isPublic?: boolean;
+}
+
+interface CreateSongInput {
+    title: string;
+    artist: string;
+    duration: number;
+    fileId: string;
+}
+
+interface AddContributorInput {
+    playlistId: string;
+    userId: string;
+    role: ContributorRole;
+}
+
 const generateToken = (user: IUser): string => {
     return jwt.sign(
         { id: user._id.toString(), email: user.email },
@@ -44,6 +78,45 @@ const formatUser = (user: IUser) => ({
     lastName: user.lastName,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
+});
+
+const formatPlaylist = (playlist: IPlaylist) => ({
+    id: playlist._id.toString(),
+    title: playlist.title,
+    description: playlist.description,
+    ownerId: playlist.ownerId.toString(),
+    isPublic: playlist.isPublic,
+    createdAt: playlist.createdAt.toISOString(),
+    updatedAt: playlist.updatedAt.toISOString(),
+});
+
+const formatSong = (song: ISong) => ({
+    id: song._id.toString(),
+    title: song.title,
+    artist: song.artist,
+    duration: song.duration,
+    fileId: song.fileId.toString(),
+    uploadedById: song.uploadedBy.toString(),
+    createdAt: song.createdAt.toISOString(),
+    updatedAt: song.updatedAt.toISOString(),
+});
+
+const formatPlaylistSong = (playlistSong: IPlaylistSong) => ({
+    id: playlistSong._id.toString(),
+    playlistId: playlistSong.playlistId.toString(),
+    songId: playlistSong.songId.toString(),
+    addedById: playlistSong.addedBy.toString(),
+    order: playlistSong.order,
+    createdAt: playlistSong.createdAt.toISOString(),
+});
+
+const formatContributor = (contributor: IContributor) => ({
+    id: contributor._id.toString(),
+    playlistId: contributor.playlistId.toString(),
+    userId: contributor.userId.toString(),
+    role: contributor.role,
+    invitedById: contributor.invitedBy.toString(),
+    createdAt: contributor.createdAt.toISOString(),
 });
 
 const validateRegisterInput = (input: RegisterInput) => {
@@ -75,10 +148,64 @@ const validateRegisterInput = (input: RegisterInput) => {
     }
 };
 
+// Authorization helper
+const checkPlaylistAccess = async (playlistId: string, userId: string, requiredRole?: ContributorRole) => {
+    const playlist = await Playlist.findOne({ _id: playlistId, isDeleted: false });
+
+    if (!playlist) {
+        throw new GraphQLError('Playlist not found', {
+            extensions: { code: 'NOT_FOUND' },
+        });
+    }
+
+
+    // Owner has full access
+    console.log('🔍 Checking access:', {
+        playlistOwnerId: playlist.ownerId.toString(),
+        userId: userId,
+        match: playlist.ownerId.toString() === userId
+    });
+
+    if (playlist.ownerId.toString() === userId) {
+        return { playlist, isOwner: true, role: ContributorRole.ADMIN };
+    }
+
+
+    // Check contributor access
+    const contributor = await Contributor.findOne({
+        playlistId,
+        userId,
+        isDeleted: false
+    });
+
+    if (!contributor) {
+        throw new GraphQLError('Access denied', {
+            extensions: { code: 'FORBIDDEN' },
+        });
+    }
+
+    if (requiredRole) {
+        const roleHierarchy = {
+            [ContributorRole.VIEWER]: 0,
+            [ContributorRole.EDITOR]: 1,
+            [ContributorRole.ADMIN]: 2,
+        };
+
+        if (roleHierarchy[contributor.role] < roleHierarchy[requiredRole]) {
+            throw new GraphQLError('Insufficient permissions', {
+                extensions: { code: 'FORBIDDEN' },
+            });
+        }
+    }
+
+    return { playlist, isOwner: false, role: contributor.role };
+};
+
 export const resolvers = {
     Query: {
-        hello: () => 'Hello from MERN Server!',
+        hello: () => 'Hello from MERN Playlist Server!',
 
+        // User queries
         me: async (_: any, __: any, context: Context) => {
             if (!context.user) {
                 throw new GraphQLError('Not authenticated', {
@@ -86,9 +213,9 @@ export const resolvers = {
                 });
             }
 
-            const user = await User.findOne({ 
-                _id: context.user.id, 
-                isDeleted: false 
+            const user = await User.findOne({
+                _id: context.user.id,
+                isDeleted: false
             });
 
             if (!user) {
@@ -128,9 +255,133 @@ export const resolvers = {
 
             return formatUser(user);
         },
+
+        // Playlist queries
+        playlists: async (_: any, __: any, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            const playlists = await Playlist.find({ isDeleted: false });
+            return playlists.map(formatPlaylist);
+        },
+
+        playlist: async (_: any, { id }: { id: string }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            const playlist = await Playlist.findOne({ _id: id, isDeleted: false });
+
+            if (!playlist) {
+                throw new GraphQLError('Playlist not found', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            // Check access
+            if (!playlist.isPublic && playlist.ownerId.toString() !== context.user.id) {
+                const contributor = await Contributor.findOne({
+                    playlistId: id,
+                    userId: context.user.id,
+                    isDeleted: false
+                });
+
+                if (!contributor) {
+                    throw new GraphQLError('Access denied', {
+                        extensions: { code: 'FORBIDDEN' },
+                    });
+                }
+            }
+
+            return formatPlaylist(playlist);
+        },
+
+        myPlaylists: async (_: any, __: any, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            const playlists = await Playlist.find({
+                ownerId: context.user.id,
+                isDeleted: false
+            });
+
+            return playlists.map(formatPlaylist);
+        },
+
+        publicPlaylists: async (_: any, __: any, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            const playlists = await Playlist.find({
+                isPublic: true,
+                isDeleted: false
+            });
+
+            return playlists.map(formatPlaylist);
+        },
+
+        // Song queries
+        songs: async (_: any, __: any, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            const songs = await Song.find({ isDeleted: false });
+            return songs.map(formatSong);
+        },
+
+        song: async (_: any, { id }: { id: string }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            const song = await Song.findOne({ _id: id, isDeleted: false });
+
+            if (!song) {
+                throw new GraphQLError('Song not found', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            return formatSong(song);
+        },
+
+        playlistSongs: async (_: any, { playlistId }: { playlistId: string }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            // Check access to playlist
+            await checkPlaylistAccess(playlistId, context.user.id);
+
+            const playlistSongs = await PlaylistSong.find({
+                playlistId,
+                isDeleted: false
+            }).sort({ order: 1 });
+
+            return playlistSongs.map(formatPlaylistSong);
+        },
     },
 
     Mutation: {
+        // User mutations
         register: async (_: any, { input }: { input: RegisterInput }) => {
             validateRegisterInput(input);
 
@@ -177,9 +428,9 @@ export const resolvers = {
                 });
             }
 
-            const user = await User.findOne({ 
-                email: input.email, 
-                isDeleted: false 
+            const user = await User.findOne({
+                email: input.email,
+                isDeleted: false
             });
 
             if (!user) {
@@ -270,6 +521,346 @@ export const resolvers = {
 
             return true;
         },
+
+        // Playlist mutations
+        createPlaylist: async (_: any, { input }: { input: CreatePlaylistInput }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            if (!input.title || input.title.trim().length === 0) {
+                throw new GraphQLError('Title is required', {
+                    extensions: { code: 'VALIDATION_ERROR' },
+                });
+            }
+
+            const newPlaylist = new Playlist({
+                title: input.title,
+                description: input.description || '',
+                ownerId: context.user.id,
+                isPublic: input.isPublic !== undefined ? input.isPublic : true,
+            });
+
+            const savedPlaylist = await newPlaylist.save();
+            return formatPlaylist(savedPlaylist);
+        },
+
+        updatePlaylist: async (
+            _: any,
+            { id, input }: { id: string; input: UpdatePlaylistInput },
+            context: Context
+        ) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            // Check if user has EDITOR or ADMIN role
+            await checkPlaylistAccess(id, context.user.id, ContributorRole.EDITOR);
+
+            const updateData: Partial<IPlaylist> = {};
+            if (input.title !== undefined) updateData.title = input.title;
+            if (input.description !== undefined) updateData.description = input.description;
+            if (input.isPublic !== undefined) updateData.isPublic = input.isPublic;
+
+            const playlist = await Playlist.findOneAndUpdate(
+                { _id: id, isDeleted: false },
+                updateData,
+                { new: true }
+            );
+
+            if (!playlist) {
+                throw new GraphQLError('Playlist not found', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            // Publish update
+            pubsub.publish(PLAYLIST_UPDATED, {
+                playlistUpdated: formatPlaylist(playlist),
+                playlistId: id,
+            });
+
+            return formatPlaylist(playlist);
+        },
+
+        deletePlaylist: async (_: any, { id }: { id: string }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            const { isOwner } = await checkPlaylistAccess(id, context.user.id);
+
+            if (!isOwner) {
+                throw new GraphQLError('Only owner can delete playlist', {
+                    extensions: { code: 'FORBIDDEN' },
+                });
+            }
+
+            await Playlist.findByIdAndUpdate(id, { isDeleted: true });
+            return true;
+        },
+
+        // Song mutations
+        createSong: async (_: any, { input }: { input: CreateSongInput }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            if (!input.title || !input.artist || !input.duration || !input.fileId) {
+                throw new GraphQLError('All fields are required', {
+                    extensions: { code: 'VALIDATION_ERROR' },
+                });
+            }
+
+            const newSong = new Song({
+                title: input.title,
+                artist: input.artist,
+                duration: input.duration,
+                fileId: input.fileId,
+                uploadedBy: context.user.id,
+            });
+
+            const savedSong = await newSong.save();
+            return formatSong(savedSong);
+        },
+
+        addSongToPlaylist: async (
+            _: any,
+            { playlistId, songId }: { playlistId: string; songId: string },
+            context: Context
+        ) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            // Check if user has EDITOR role
+            await checkPlaylistAccess(playlistId, context.user.id, ContributorRole.EDITOR);
+
+            // Check if song exists
+            const song = await Song.findOne({ _id: songId, isDeleted: false });
+            if (!song) {
+                throw new GraphQLError('Song not found', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            // Check if song already in playlist
+            const existing = await PlaylistSong.findOne({
+                playlistId,
+                songId,
+                isDeleted: false
+            });
+
+            if (existing) {
+                throw new GraphQLError('Song already in playlist', {
+                    extensions: { code: 'DUPLICATE' },
+                });
+            }
+
+            // Get next order number
+            const lastSong = await PlaylistSong.findOne({ playlistId, isDeleted: false })
+                .sort({ order: -1 });
+            const nextOrder = lastSong ? lastSong.order + 1 : 0;
+
+            const newPlaylistSong = new PlaylistSong({
+                playlistId,
+                songId,
+                addedBy: context.user.id,
+                order: nextOrder,
+            });
+
+            const savedPlaylistSong = await newPlaylistSong.save();
+
+            // Publish real-time update
+            pubsub.publish(SONG_ADDED_TO_PLAYLIST, {
+                songAddedToPlaylist: formatPlaylistSong(savedPlaylistSong),
+                playlistId,
+            });
+
+            return formatPlaylistSong(savedPlaylistSong);
+        },
+
+        removeSongFromPlaylist: async (
+            _: any,
+            { playlistId, songId }: { playlistId: string; songId: string },
+            context: Context
+        ) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            // Check if user has EDITOR role
+            await checkPlaylistAccess(playlistId, context.user.id, ContributorRole.EDITOR);
+
+            const playlistSong = await PlaylistSong.findOneAndUpdate(
+                { playlistId, songId, isDeleted: false },
+                { isDeleted: true },
+                { new: true }
+            );
+
+            if (!playlistSong) {
+                throw new GraphQLError('Song not found in playlist', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            // Publish real-time update
+            pubsub.publish(SONG_REMOVED_FROM_PLAYLIST, {
+                songRemovedFromPlaylist: songId,
+                playlistId,
+            });
+
+            return true;
+        },
+
+        reorderPlaylistSongs: async (
+            _: any,
+            { playlistId, songIds }: { playlistId: string; songIds: string[] },
+            context: Context
+        ) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            // Check if user has EDITOR role
+            await checkPlaylistAccess(playlistId, context.user.id, ContributorRole.EDITOR);
+
+            // Update order for each song
+            const updates = songIds.map((songId, index) =>
+                PlaylistSong.findOneAndUpdate(
+                    { playlistId, songId, isDeleted: false },
+                    { order: index },
+                    { new: true }
+                )
+            );
+
+            const updatedSongs = await Promise.all(updates);
+            const validSongs = updatedSongs.filter((s) => s !== null);
+
+            return validSongs.map((s) => formatPlaylistSong(s!));
+        },
+
+        // Contributor mutations
+        addContributor: async (_: any, { input }: { input: AddContributorInput }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            // Check if user has ADMIN role
+            await checkPlaylistAccess(input.playlistId, context.user.id, ContributorRole.ADMIN);
+
+            // Check if user exists
+            const user = await User.findOne({ _id: input.userId, isDeleted: false });
+            if (!user) {
+                throw new GraphQLError('User not found', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            // Check if already contributor
+            const existing = await Contributor.findOne({
+                playlistId: input.playlistId,
+                userId: input.userId,
+                isDeleted: false
+            });
+
+            if (existing) {
+                throw new GraphQLError('User is already a contributor', {
+                    extensions: { code: 'DUPLICATE' },
+                });
+            }
+
+            const newContributor = new Contributor({
+                playlistId: input.playlistId,
+                userId: input.userId,
+                role: input.role,
+                invitedBy: context.user.id,
+            });
+
+            const savedContributor = await newContributor.save();
+
+            // Publish real-time update
+            pubsub.publish(CONTRIBUTOR_ADDED, {
+                contributorAdded: formatContributor(savedContributor),
+                playlistId: input.playlistId,
+            });
+
+            return formatContributor(savedContributor);
+        },
+
+        removeContributor: async (
+            _: any,
+            { playlistId, userId }: { playlistId: string; userId: string },
+            context: Context
+        ) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            // Check if user has ADMIN role
+            await checkPlaylistAccess(playlistId, context.user.id, ContributorRole.ADMIN);
+
+            const contributor = await Contributor.findOneAndUpdate(
+                { playlistId, userId, isDeleted: false },
+                { isDeleted: true },
+                { new: true }
+            );
+
+            if (!contributor) {
+                throw new GraphQLError('Contributor not found', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            return true;
+        },
+
+        updateContributorRole: async (
+            _: any,
+            { playlistId, userId, role }: { playlistId: string; userId: string; role: ContributorRole },
+            context: Context
+        ) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            // Check if user has ADMIN role
+            await checkPlaylistAccess(playlistId, context.user.id, ContributorRole.ADMIN);
+
+            const contributor = await Contributor.findOneAndUpdate(
+                { playlistId, userId, isDeleted: false },
+                { role },
+                { new: true }
+            );
+
+            if (!contributor) {
+                throw new GraphQLError('Contributor not found', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            return formatContributor(contributor);
+        },
     },
 
     Subscription: {
@@ -283,6 +874,85 @@ export const resolvers = {
         },
         userCreated: {
             subscribe: () => pubsub.asyncIterator([USER_CREATED]),
+        },
+        playlistUpdated: {
+            subscribe: (_: any, { playlistId }: { playlistId: string }) => {
+                return pubsub.asyncIterator([PLAYLIST_UPDATED]);
+            },
+        },
+        songAddedToPlaylist: {
+            subscribe: (_: any, { playlistId }: { playlistId: string }) => {
+                return pubsub.asyncIterator([SONG_ADDED_TO_PLAYLIST]);
+            },
+        },
+        songRemovedFromPlaylist: {
+            subscribe: (_: any, { playlistId }: { playlistId: string }) => {
+                return pubsub.asyncIterator([SONG_REMOVED_FROM_PLAYLIST]);
+            },
+        },
+        contributorAdded: {
+            subscribe: (_: any, { playlistId }: { playlistId: string }) => {
+                return pubsub.asyncIterator([CONTRIBUTOR_ADDED]);
+            },
+        },
+    },
+
+    // Field resolvers for nested data
+    Playlist: {
+        owner: async (parent: any) => {
+            const user = await User.findById(parent.ownerId);
+            return user ? formatUser(user) : null;
+        },
+        songs: async (parent: any) => {
+            const playlistSongs = await PlaylistSong.find({
+                playlistId: parent.id,
+                isDeleted: false
+            }).sort({ order: 1 });
+            return playlistSongs.map(formatPlaylistSong);
+        },
+        contributors: async (parent: any) => {
+            const contributors = await Contributor.find({
+                playlistId: parent.id,
+                isDeleted: false
+            });
+            return contributors.map(formatContributor);
+        },
+    },
+
+    Song: {
+        uploadedBy: async (parent: any) => {
+            const user = await User.findById(parent.uploadedById);
+            return user ? formatUser(user) : null;
+        },
+    },
+
+    PlaylistSong: {
+        playlist: async (parent: any) => {
+            const playlist = await Playlist.findById(parent.playlistId);
+            return playlist ? formatPlaylist(playlist) : null;
+        },
+        song: async (parent: any) => {
+            const song = await Song.findById(parent.songId);
+            return song ? formatSong(song) : null;
+        },
+        addedBy: async (parent: any) => {
+            const user = await User.findById(parent.addedById);
+            return user ? formatUser(user) : null;
+        },
+    },
+
+    Contributor: {
+        playlist: async (parent: any) => {
+            const playlist = await Playlist.findById(parent.playlistId);
+            return playlist ? formatPlaylist(playlist) : null;
+        },
+        user: async (parent: any) => {
+            const user = await User.findById(parent.userId);
+            return user ? formatUser(user) : null;
+        },
+        invitedBy: async (parent: any) => {
+            const user = await User.findById(parent.invitedById);
+            return user ? formatUser(user) : null;
         },
     },
 };
