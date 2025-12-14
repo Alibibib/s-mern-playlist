@@ -20,25 +20,21 @@ services:
       timeout: 5s
       retries: 5
 
-  api:
-    build: ./server
-    container_name: api
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: always
     ports:
-      - "4000:4000"
+      - "8081:8081"
     environment:
-      - NODE_ENV=development
-      - PORT=4000
-      - MONGO_URI=mongodb://root:password@mongo:27017/mern-db?authSource=admin
-      - JWT_SECRET=supersecretkey
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://root:password@mongo:27017/
+      ME_CONFIG_BASICAUTH: false
     depends_on:
-      mongo:
-        condition: service_healthy
-    volumes:
-      - ./server:/app
-      - /app/node_modules
+      - mongo
     networks:
       - app-network
-    # command: npm run dev
 
 networks:
   app-network:

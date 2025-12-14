@@ -11,6 +11,7 @@ import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
 import { typeDefs } from './graphql/typeDefs';
 import { resolvers } from './graphql/resolvers';
+import { getContextUser } from './middleware/auth';
 
 dotenv.config();
 
@@ -18,27 +19,46 @@ const startServer = async () => {
     const app = express();
     const httpServer = http.createServer(app);
 
-    // Database Connection
-    const MONGO_URI = process.env.MONGO_URI || '';
-    try {
-        await mongoose.connect(MONGO_URI);
-        console.log('MongoDB connected successfully');
-    } catch (err) {
-        console.error('MongoDB connection error:', err);
-    }
+    const connectDB = async () => {
+        const MONGO_URI = process.env.MONGO_URI || '';
 
-    // GraphQL Schema
+        const connectionString = MONGO_URI.includes('mongo:')
+            ? MONGO_URI
+            : 'mongodb://root:password@localhost:27017/mern-db?authSource=admin&directConnection=true';
+
+        try {
+            await mongoose.connect(connectionString);
+            console.log('✅ MongoDB connected successfully');
+            console.log(`📍 Connected to: ${connectionString.replace(/\/\/.*@/, '//***@')}`);
+        } catch (err) {
+            console.error('❌ MongoDB connection failed');
+            console.error('💡 Ensure Docker is running: docker-compose up -d mongo');
+            console.error(err);
+            process.exit(1);
+        }
+    };
+
+    await connectDB();
+
     const schema = makeExecutableSchema({ typeDefs, resolvers });
 
-    // WebSocket Server for Subscriptions
     const wsServer = new WebSocketServer({
         server: httpServer,
         path: '/graphql',
     });
 
-    const serverCleanup = useServer({ schema }, wsServer);
+    const serverCleanup = useServer(
+        {
+            schema,
+            context: async (ctx) => {
+                const token = ctx.connectionParams?.authorization as string;
+                const user = token ? getContextUser({ headers: { authorization: token } }) : null;
+                return { user };
+            },
+        },
+        wsServer
+    );
 
-    // Apollo Server Setup
     const server = new ApolloServer({
         schema,
         plugins: [
@@ -53,25 +73,50 @@ const startServer = async () => {
                 },
             },
         ],
+        formatError: (formattedError, _error) => {
+            console.error('GraphQL Error:', formattedError);
+            
+            return {
+                message: formattedError.message,
+                extensions: formattedError.extensions,
+            };
+        },
     });
 
     await server.start();
 
+    const corsOptions = {
+        origin: process.env.CLIENT_URL || 'http://localhost:3000',
+        credentials: true,
+    };
+
     app.use(
         '/graphql',
-        cors<cors.CorsRequest>(),
+        cors<cors.CorsRequest>(corsOptions),
         express.json(),
-        expressMiddleware(server)
+        expressMiddleware(server, {
+            context: async ({ req }) => {
+                const user = getContextUser(req);
+                return { user };
+            },
+        })
     );
+
+    app.get('/health', (req, res) => {
+        res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+    });
 
     const PORT = process.env.PORT || 4000;
 
     httpServer.listen(PORT, () => {
         console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
-        console.log(`🚀 Subscriptions ready at ws://localhost:${PORT}/graphql`);
+        console.log(`🔌 Subscriptions ready at ws://localhost:${PORT}/graphql`);
+        console.log(`📊 Health check at http://localhost:${PORT}/health`);
+        console.log(`🔐 JWT_SECRET is ${process.env.JWT_SECRET ? 'configured' : 'using default (UNSAFE!)'}`);
     });
 };
 
 startServer().catch((err) => {
-    console.error('Server failed to start', err);
+    console.error('❌ Server failed to start', err);
+    process.exit(1);
 });
