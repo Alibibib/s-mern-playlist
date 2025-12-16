@@ -15,6 +15,7 @@ import { getContextUser } from './middleware/auth';
 import { initGridFS } from './utils/gridfs';
 import uploadRoutes from './routes/upload';
 import { cleanupOldDeletedSongs, startCleanupScheduler } from './utils/cleanup';
+import { connectionManager, ConnectionContext } from './services/connection.manager';
 
 dotenv.config();
 
@@ -56,10 +57,27 @@ const startServer = async () => {
     const serverCleanup = useServer(
         {
             schema,
+            onConnect: async (ctx) => {
+                try {
+                    const connectionContext = await connectionManager.onConnect(ctx);
+                    (ctx as any).connectionId = connectionContext.connectionId;
+                    return connectionContext as unknown as Record<string, unknown>;
+                } catch (_err) {
+                    return false;
+                }
+            },
+            onDisconnect: (ctx) => {
+                connectionManager.onDisconnect(ctx);
+            },
+            onSubscribe: (ctx, msg) => {
+                connectionManager.onSubscribe(ctx, msg.id);
+            },
             context: async (ctx) => {
-                const token = ctx.connectionParams?.authorization as string;
-                const user = token ? getContextUser({ headers: { authorization: token } }) : null;
-                return { user };
+                const connectionContext = ctx.extra as unknown as ConnectionContext;
+                return {
+                    user: connectionContext?.user || null,
+                    connectionId: connectionContext?.connectionId,
+                };
             },
         },
         wsServer
@@ -114,7 +132,12 @@ const startServer = async () => {
     );
 
     app.get('/health', (req, res) => {
-        res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+        const stats = connectionManager.getStats();
+        res.status(200).json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            websocket: stats,
+        });
     });
 
     app.post('/api/admin/cleanup', async (req, res) => {

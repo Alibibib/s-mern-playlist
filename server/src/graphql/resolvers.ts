@@ -2,13 +2,14 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { GraphQLError } from 'graphql';
-import { PubSub, withFilter } from 'graphql-subscriptions';
+import { withFilter } from 'graphql-subscriptions';
 import User, { IUser } from '../models/User';
 import Playlist, { IPlaylist } from '../models/Playlist';
 import Song, { ISong } from '../models/Song';
 import PlaylistSong, { IPlaylistSong } from '../models/PlaylistSong';
 import Contributor, { IContributor, ContributorRole } from '../models/Contributor';
 import { deleteFileFromGridFS } from '../utils/gridfs';
+import { Events, pubsubService } from '../services/pubsub.service';
 import {
     addContributorSchema,
     createPlaylistSchema,
@@ -17,17 +18,9 @@ import {
     registerSchema,
     updatePlaylistSchema,
     songIdsArraySchema,
+    mongoIdSchema,
 } from '../validation/schemas';
 import { validate } from '../validation/validate';
-
-const pubsub = new PubSub();
-
-// Subscription events
-const USER_CREATED = 'USER_CREATED';
-const PLAYLIST_UPDATED = 'PLAYLIST_UPDATED';
-const SONG_ADDED_TO_PLAYLIST = 'SONG_ADDED_TO_PLAYLIST';
-const SONG_REMOVED_FROM_PLAYLIST = 'SONG_REMOVED_FROM_PLAYLIST';
-const CONTRIBUTOR_ADDED = 'CONTRIBUTOR_ADDED';
 
 interface Context {
     user?: {
@@ -423,9 +416,7 @@ export const resolvers = {
             const savedUser = await newUser.save();
             const token = generateToken(savedUser);
 
-            pubsub.publish(USER_CREATED, {
-                userCreated: formatUser(savedUser),
-            });
+            pubsubService.publishUserCreated(formatUser(savedUser));
 
             return {
                 user: formatUser(savedUser),
@@ -586,10 +577,7 @@ export const resolvers = {
             }
 
             // Publish update
-            pubsub.publish(PLAYLIST_UPDATED, {
-                playlistUpdated: formatPlaylist(playlist),
-                playlistId: id,
-            });
+            pubsubService.publishPlaylistUpdated(id, formatPlaylist(playlist));
 
             return formatPlaylist(playlist);
         },
@@ -703,10 +691,10 @@ export const resolvers = {
             }
 
             // Publish real-time update
-            pubsub.publish(SONG_ADDED_TO_PLAYLIST, {
-                songAddedToPlaylist: formatPlaylistSong(savedPlaylistSong),
-                playlistId: validatedPlaylistId,
-            });
+            pubsubService.publishSongAdded(
+                validatedPlaylistId,
+                formatPlaylistSong(savedPlaylistSong)
+            );
 
             return formatPlaylistSong(savedPlaylistSong);
         },
@@ -741,10 +729,7 @@ export const resolvers = {
             }
 
             // Publish real-time update
-            pubsub.publish(SONG_REMOVED_FROM_PLAYLIST, {
-                songRemovedFromPlaylist: validatedSongId,
-                playlistId: validatedPlaylistId,
-            });
+            pubsubService.publishSongRemoved(validatedPlaylistId, validatedSongId);
 
             return true;
         },
@@ -915,14 +900,14 @@ export const resolvers = {
 
             if (existingDeleted) {
                 existingDeleted.isDeleted = false;
-                existingDeleted.role = validatedInput.role;
+                existingDeleted.role = validatedInput.role as ContributorRole;
                 existingDeleted.invitedBy = new mongoose.Types.ObjectId(context.user.id);
                 savedContributor = await existingDeleted.save();
             } else {
                 const newContributor = new Contributor({
                     playlistId: validatedInput.playlistId,
                     userId: validatedInput.userId,
-                    role: validatedInput.role,
+                    role: validatedInput.role as ContributorRole,
                     invitedBy: context.user.id,
                 });
 
@@ -930,10 +915,10 @@ export const resolvers = {
             }
 
             // Publish real-time update
-            pubsub.publish(CONTRIBUTOR_ADDED, {
-                contributorAdded: formatContributor(savedContributor),
-                playlistId: input.playlistId,
-            });
+            pubsubService.publishContributorAdded(
+                validatedInput.playlistId,
+                formatContributor(savedContributor)
+            );
 
             return formatContributor(savedContributor);
         },
@@ -1007,11 +992,11 @@ export const resolvers = {
             },
         },
         userCreated: {
-            subscribe: () => pubsub.asyncIterator([USER_CREATED]),
+            subscribe: () => pubsubService.subscribe(Events.USER_CREATED),
         },
         playlistUpdated: {
             subscribe: withFilter(
-                () => pubsub.asyncIterator([PLAYLIST_UPDATED]),
+                () => pubsubService.subscribe(Events.PLAYLIST_UPDATED),
                 async (payload: any, variables: { playlistId: string }, context: Context) => {
                     if (payload.playlistId !== variables.playlistId) return false;
                     if (!context?.user?.id) return false;
@@ -1027,7 +1012,7 @@ export const resolvers = {
         },
         songAddedToPlaylist: {
             subscribe: withFilter(
-                () => pubsub.asyncIterator([SONG_ADDED_TO_PLAYLIST]),
+                () => pubsubService.subscribe(Events.SONG_ADDED_TO_PLAYLIST),
                 async (payload: any, variables: { playlistId: string }, context: Context) => {
                     if (payload.playlistId !== variables.playlistId) return false;
                     if (!context?.user?.id) return false;
@@ -1043,7 +1028,7 @@ export const resolvers = {
         },
         songRemovedFromPlaylist: {
             subscribe: withFilter(
-                () => pubsub.asyncIterator([SONG_REMOVED_FROM_PLAYLIST]),
+                () => pubsubService.subscribe(Events.SONG_REMOVED_FROM_PLAYLIST),
                 async (payload: any, variables: { playlistId: string }, context: Context) => {
                     if (payload.playlistId !== variables.playlistId) return false;
                     if (!context?.user?.id) return false;
@@ -1059,7 +1044,7 @@ export const resolvers = {
         },
         contributorAdded: {
             subscribe: withFilter(
-                () => pubsub.asyncIterator([CONTRIBUTOR_ADDED]),
+                () => pubsubService.subscribe(Events.CONTRIBUTOR_ADDED),
                 async (payload: any, variables: { playlistId: string }, context: Context) => {
                     if (payload.playlistId !== variables.playlistId) return false;
                     if (!context?.user?.id) return false;
