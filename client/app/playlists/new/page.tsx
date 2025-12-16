@@ -9,11 +9,28 @@ import type { CreatePlaylistInput } from '@/lib/validation/schemas';
 import { useUIStore } from '@/lib/store/ui-store';
 import { Button } from '@/components/ui/button';
 
+interface CreatePlaylistMutationData {
+  createPlaylist: {
+    id: string;
+    title: string;
+    description?: string;
+    isPublic: boolean;
+    owner: {
+      username: string;
+    };
+    createdAt: string;
+  };
+}
+
+interface CreatePlaylistMutationVariables {
+  input: CreatePlaylistInput;
+}
+
 export default function NewPlaylistPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { addNotification } = useUIStore();
-  const [createPlaylist, { loading }] = useMutation(CREATE_PLAYLIST_MUTATION);
+  const [createPlaylist, { loading }] = useMutation<CreatePlaylistMutationData, CreatePlaylistMutationVariables>(CREATE_PLAYLIST_MUTATION);
 
   if (!isAuthenticated) {
     return (
@@ -33,11 +50,12 @@ export default function NewPlaylistPage() {
       });
 
       if (result.data?.createPlaylist) {
+        const createdPlaylist = result.data.createPlaylist;
         addNotification({
           message: 'Playlist created successfully!',
           type: 'success',
         });
-        router.push(`/playlists/${result.data.createPlaylist.id}`);
+        router.push(`/playlists/${createdPlaylist.id}`);
       }
     } catch (error: any) {
       addNotification({
