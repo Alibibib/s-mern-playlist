@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { PLAYLIST_QUERY } from '@/lib/graphql/queries/playlist.queries';
 import { useSubscription } from './use-subscription';
 import { SONG_ADDED_TO_PLAYLIST_SUBSCRIPTION } from '@/lib/graphql/subscriptions/playlist.subscriptions';

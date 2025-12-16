@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/auth-store';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { ME_QUERY } from '@/lib/graphql/queries/auth.queries';
 import { useEffect } from 'react';
 

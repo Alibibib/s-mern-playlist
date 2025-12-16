@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { SONGS_QUERY } from '@/lib/graphql/queries/song.queries';
 import { useAuth } from '@/hooks/use-auth';
 import { SongPlayer } from '@/components/song/song-player';

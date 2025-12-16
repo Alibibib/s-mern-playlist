@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { useRouter } from 'next/navigation';
 import { MY_PLAYLISTS_QUERY } from '@/lib/graphql/queries/playlist.queries';
 import { useAuth } from '@/hooks/use-auth';

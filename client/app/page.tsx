@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { PUBLIC_PLAYLISTS_QUERY } from '@/lib/graphql/queries/playlist.queries';
 import { PlaylistList } from '@/components/playlist/playlist-list';
 import { Loading } from '@/components/ui/loading';

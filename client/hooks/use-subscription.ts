@@ -1,6 +1,6 @@
 'use client';
 
-import { useSubscription as useApolloSubscription } from '@apollo/client';
+import { useSubscription as useApolloSubscription } from '@apollo/client/react';
 import { useEffect } from 'react';
 import { useUIStore } from '@/lib/store/ui-store';
 

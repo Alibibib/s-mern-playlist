@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { ME_QUERY } from '@/lib/graphql/queries/auth.queries';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
