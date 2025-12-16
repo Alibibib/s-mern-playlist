@@ -23,10 +23,13 @@ client/
 │   ├── login/             # Login page
 │   ├── register/          # Registration page
 │   ├── playlists/         # Playlist pages
-│   │   ├── page.tsx       # My playlists list
+│   │   ├── page.tsx       # All/My playlists list (with toggle)
 │   │   ├── new/           # Create playlist
 │   │   └── [id]/          # Playlist details
-│   ├── songs/             # Songs page
+│   │       └── edit/      # Edit playlist
+│   ├── songs/             # Songs pages
+│   │   ├── page.tsx       # All songs list
+│   │   └── [id]/          # Song details
 │   └── profile/           # User profile
 ├── components/             # React components
 │   ├── ui/                # Base UI components
@@ -106,10 +109,12 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 - **Home (`/`)** - Browse public playlists
 - **Login (`/login`)** - User authentication
 - **Register (`/register`)** - User registration
-- **My Playlists (`/playlists`)** - User's playlists
+- **Playlists (`/playlists`)** - All playlists or user's playlists (toggle between "All" and "Mine")
 - **Create Playlist (`/playlists/new`)** - Create new playlist
-- **Playlist Details (`/playlists/[id]`)** - View and manage playlist
-- **Songs (`/songs`)** - Browse all songs
+- **Playlist Details (`/playlists/[id]`)** - View and manage playlist (add/remove songs, delete)
+- **Edit Playlist (`/playlists/[id]/edit`)** - Edit playlist metadata
+- **Songs (`/songs`)** - Browse all songs and upload new songs
+- **Song Details (`/songs/[id]`)** - View song details and play audio
 - **Profile (`/profile`)** - User profile and settings
 
 ### Features
@@ -117,10 +122,13 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 - ✅ User authentication (JWT)
 - ✅ Real-time playlist updates via WebSocket subscriptions
 - ✅ Audio player for streaming songs
+- ✅ Playlist management (create, edit, delete, add/remove songs)
+- ✅ Song upload and management
 - ✅ Form validation with Zod
 - ✅ Responsive design with TailwindCSS
 - ✅ State management with Zustand
 - ✅ Error handling and notifications
+- ✅ Protected routes
 
 ## 🧪 Testing
 
@@ -137,6 +145,7 @@ The frontend uses Next.js built-in testing capabilities. For end-to-end testing,
   "next": "16.0.10",
   "react": "19.2.1",
   "@apollo/client": "^4.0.10",
+  "@hookform/resolvers": "^5.2.2",
   "zustand": "^5.0.9",
   "react-hook-form": "^7.68.0",
   "zod": "^4.2.1",
