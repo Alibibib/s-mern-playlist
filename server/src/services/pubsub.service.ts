@@ -1,4 +1,6 @@
-import { PubSub } from 'graphql-subscriptions';
+import { PubSub, PubSubEngine } from 'graphql-subscriptions';
+import { RedisPubSub } from 'graphql-redis-subscriptions';
+import type { RedisOptions } from 'ioredis';
 
 export const Events = {
     USER_CREATED: 'USER_CREATED',
@@ -10,43 +12,74 @@ export const Events = {
 
 export type EventName = (typeof Events)[keyof typeof Events];
 
+type PubSubMode = 'memory' | 'redis';
+
+const createPubSub = (): { engine: PubSubEngine; mode: PubSubMode } => {
+    const redisUrl = process.env.REDIS_URL;
+
+    if (redisUrl) {
+        const parsed = new URL(redisUrl);
+        const connectionOptions: RedisOptions = {
+            lazyConnect: false,
+            retryStrategy: (times) => Math.min(times * 100, 2000),
+            host: parsed.hostname,
+            port: parsed.port ? parseInt(parsed.port, 10) : 6379,
+            password: parsed.password || undefined,
+            tls: parsed.protocol === 'rediss:' ? {} : undefined,
+        };
+
+        const engine = new RedisPubSub({
+            connection: connectionOptions,
+        });
+
+        console.log('📡 PubSub mode: redis');
+        return { engine, mode: 'redis' };
+    }
+
+    console.log('📡 PubSub mode: in-memory');
+    return { engine: new PubSub(), mode: 'memory' };
+};
+
 class PubSubService {
-    private pubsub: PubSub;
+    private pubsub: PubSubEngine;
+    private mode: PubSubMode;
     private activeSubscriptions: Map<string, Set<string>>;
 
     constructor() {
-        this.pubsub = new PubSub();
+        const { engine, mode } = createPubSub();
+        this.pubsub = engine;
+        this.mode = mode;
         this.activeSubscriptions = new Map();
     }
 
     // Publish helpers
     publishUserCreated(user: any) {
-        this.pubsub.publish(Events.USER_CREATED, { userCreated: user });
+        void this.pubsub.publish(Events.USER_CREATED, { userCreated: user });
     }
 
     publishPlaylistUpdated(playlistId: string, playlist: any) {
-        this.pubsub.publish(Events.PLAYLIST_UPDATED, {
+        void this.pubsub.publish(Events.PLAYLIST_UPDATED, {
             playlistUpdated: playlist,
             playlistId,
         });
     }
 
     publishSongAdded(playlistId: string, playlistSong: any) {
-        this.pubsub.publish(Events.SONG_ADDED_TO_PLAYLIST, {
+        void this.pubsub.publish(Events.SONG_ADDED_TO_PLAYLIST, {
             songAddedToPlaylist: playlistSong,
             playlistId,
         });
     }
 
     publishSongRemoved(playlistId: string, songId: string) {
-        this.pubsub.publish(Events.SONG_REMOVED_FROM_PLAYLIST, {
+        void this.pubsub.publish(Events.SONG_REMOVED_FROM_PLAYLIST, {
             songRemovedFromPlaylist: songId,
             playlistId,
         });
     }
 
     publishContributorAdded(playlistId: string, contributor: any) {
-        this.pubsub.publish(Events.CONTRIBUTOR_ADDED, {
+        void this.pubsub.publish(Events.CONTRIBUTOR_ADDED, {
             contributorAdded: contributor,
             playlistId,
         });
