@@ -9,11 +9,16 @@ import { Loading } from '@/components/ui/loading';
 import { Error } from '@/components/ui/error';
 import { formatDate } from '@/lib/utils/format';
 import { useRouter } from 'next/navigation';
+import type { User } from '@/types';
+
+interface MeQueryData {
+  me: User;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuth();
-  const { data, loading, error } = useQuery(ME_QUERY, {
+  const { data, loading, error } = useQuery<MeQueryData>(ME_QUERY, {
     skip: !isAuthenticated,
   });
 
@@ -28,7 +33,7 @@ export default function ProfilePage() {
     );
   }
 
-  const displayUser = data?.me || user;
+  const displayUser = (data?.me as User | undefined) || user;
 
   if (loading) {
     return (
