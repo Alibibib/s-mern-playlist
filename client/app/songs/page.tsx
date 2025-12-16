@@ -9,10 +9,15 @@ import { Error } from '@/components/ui/error';
 import { Card } from '@/components/ui/card';
 import { formatDuration } from '@/lib/utils/format';
 import { Button } from '@/components/ui/button';
+import type { Song } from '@/types';
+
+interface SongsQueryData {
+  songs: Song[];
+}
 
 export default function SongsPage() {
   const { isAuthenticated } = useAuth();
-  const { data, loading, error } = useQuery(SONGS_QUERY, {
+  const { data, loading, error } = useQuery<SongsQueryData>(SONGS_QUERY, {
     skip: !isAuthenticated,
   });
 
