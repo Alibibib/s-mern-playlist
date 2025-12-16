@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import { useRouter, useParams } from 'next/navigation';
 import { usePlaylist } from '@/hooks/use-playlist';
 import { REMOVE_SONG_FROM_PLAYLIST_MUTATION } from '@/lib/graphql/mutations/playlist.mutations';

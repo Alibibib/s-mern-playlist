@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import { useRouter } from 'next/navigation';
 import { CREATE_PLAYLIST_MUTATION } from '@/lib/graphql/mutations/playlist.mutations';
 import { useAuth } from '@/hooks/use-auth';

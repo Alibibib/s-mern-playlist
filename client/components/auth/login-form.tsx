@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import { useRouter } from 'next/navigation';
 import { loginSchema, type LoginInput } from '@/lib/validation/schemas';
 import { LOGIN_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
