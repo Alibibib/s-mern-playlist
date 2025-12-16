@@ -70,12 +70,14 @@ export const apolloClient = new ApolloClient({
       Query: {
         fields: {
           playlists: {
-            merge(existing = [], incoming) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            merge(_existing = [], incoming) {
               return incoming;
             },
           },
           songs: {
-            merge(existing = [], incoming) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            merge(_existing = [], incoming) {
               return incoming;
             },
           },
@@ -84,7 +86,8 @@ export const apolloClient = new ApolloClient({
       Playlist: {
         fields: {
           songs: {
-            merge(existing = [], incoming) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            merge(_existing = [], incoming) {
               return incoming;
             },
           },
