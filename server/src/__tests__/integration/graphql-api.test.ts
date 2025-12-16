@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { resolvers } from '../../graphql/resolvers';
+import { resolvers } from '@graphql/resolvers';
 import User from '../../models/User';
 import Playlist from '../../models/Playlist';
-import Song from '../../models/Song';
 import PlaylistSong from '../../models/PlaylistSong';
 import Contributor, { ContributorRole } from '../../models/Contributor';
 

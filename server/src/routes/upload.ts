@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { ObjectId } from 'mongodb';
-import { uploadFileToGridFS, getFileMetadata, getGridFSBucket } from '../utils/gridfs';
-import { getContextUser } from '../middleware/auth';
+import { uploadFileToGridFS, getFileMetadata, getGridFSBucket } from '@utils/gridfs';
+import { getContextUser } from '@middleware/auth';
 
 const router = Router();
 

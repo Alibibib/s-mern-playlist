@@ -53,9 +53,13 @@ export function RegisterForm() {
         });
         router.push('/playlists');
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Registration failed. Please try again.';
       addNotification({
-        message: error.message || 'Registration failed. Please try again.',
+        message: errorMessage,
         type: 'error',
       });
     }

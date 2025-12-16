@@ -9,13 +9,13 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
-import { typeDefs } from './graphql/typeDefs';
-import { resolvers } from './graphql/resolvers';
-import { getContextUser } from './middleware/auth';
-import { initGridFS } from './utils/gridfs';
+import { typeDefs } from '@graphql/typeDefs';
+import { resolvers } from '@graphql/resolvers';
+import { getContextUser } from '@middleware/auth';
+import { initGridFS } from '@utils/gridfs';
 import uploadRoutes from './routes/upload';
-import { cleanupOldDeletedSongs, startCleanupScheduler } from './utils/cleanup';
-import { connectionManager, ConnectionContext } from './services/connection.manager';
+import { cleanupOldDeletedSongs, startCleanupScheduler } from '@utils/cleanup';
+import { connectionManager, ConnectionContext } from '@/services';
 
 dotenv.config();
 

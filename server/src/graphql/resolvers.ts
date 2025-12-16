@@ -8,8 +8,8 @@ import Playlist, { IPlaylist } from '../models/Playlist';
 import Song, { ISong } from '../models/Song';
 import PlaylistSong, { IPlaylistSong } from '../models/PlaylistSong';
 import Contributor, { IContributor, ContributorRole } from '../models/Contributor';
-import { deleteFileFromGridFS } from '../utils/gridfs';
-import { Events, pubsubService } from '../services';
+import { deleteFileFromGridFS } from '@utils/gridfs';
+import { Events, pubsubService } from '@/services';
 import {
     addContributorSchema,
     createPlaylistSchema,
@@ -19,8 +19,8 @@ import {
     updatePlaylistSchema,
     songIdsArraySchema,
     mongoIdSchema,
-} from '../validation';
-import { validate } from '../validation';
+} from '@/validation';
+import { validate } from '@/validation';
 
 interface Context {
     user?: {

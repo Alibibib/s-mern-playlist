@@ -37,9 +37,11 @@ export default function PlaylistDetailPage() {
         type: 'success',
       });
       refetch();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to remove song';
       addNotification({
-        message: error.message || 'Failed to remove song',
+        message: errorMessage,
         type: 'error',
       });
     }

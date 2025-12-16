@@ -46,7 +46,7 @@ export default function SongsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {data.songs.map((song: any) => (
+            {data.songs.map((song) => (
               <Card key={song.id}>
                 <div className="mb-4">
                   <h3 className="text-xl font-semibold">{song.title}</h3>

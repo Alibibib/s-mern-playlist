@@ -57,9 +57,11 @@ export default function NewPlaylistPage() {
         });
         router.push(`/playlists/${createdPlaylist.id}`);
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to create playlist';
       addNotification({
-        message: error.message || 'Failed to create playlist',
+        message: errorMessage,
         type: 'error',
       });
     }

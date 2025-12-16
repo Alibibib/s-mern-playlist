@@ -6,7 +6,7 @@ import { Error } from '@/components/ui/error';
 interface PlaylistListProps {
   playlists?: Playlist[];
   loading?: boolean;
-  error?: any;
+  error?: Error | { message?: string } | null;
 }
 
 export function PlaylistList({ playlists, loading, error }: PlaylistListProps) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { API_URL } from '@/lib/utils/constants';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useUIStore } from '@/lib/store/ui-store';
@@ -52,9 +52,11 @@ export function UploadForm() {
       // Reset form
       setFormData({ title: '', artist: '', duration: '' });
       setFile(null);
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to upload file';
       addNotification({
-        message: error.message || 'Failed to upload file',
+        message: errorMessage,
         type: 'error',
       });
     } finally {

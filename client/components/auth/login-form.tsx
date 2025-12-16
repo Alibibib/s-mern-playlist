@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@apollo/client/react';
@@ -54,9 +53,11 @@ export function LoginForm() {
         });
         router.push('/playlists');
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Login failed. Please try again.';
       addNotification({
-        message: error.message || 'Login failed. Please try again.',
+        message: errorMessage,
         type: 'error',
       });
     }
@@ -83,7 +84,7 @@ export function LoginForm() {
         </Button>
       </form>
       <p className="mt-4 text-center text-sm text-gray-600">
-        Don't have an account?{' '}
+        Don&#39;t have an account?{' '}
         <a href="/register" className="text-blue-600 hover:underline">
           Register
         </a>
