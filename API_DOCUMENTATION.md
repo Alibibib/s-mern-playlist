@@ -812,7 +812,7 @@ GET http://localhost:4000/health
 ```json
 {
   "status": "ok",
-  "timestamp": "2024-01-15T10:30:45.123Z"
+  "timestamp": "2024-12-16T10:30:45.123Z"
 }
 ```
 
