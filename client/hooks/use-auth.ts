@@ -5,6 +5,11 @@ import { useAuthStore } from '@/lib/store/auth-store';
 import { useQuery } from '@apollo/client/react';
 import { ME_QUERY } from '@/lib/graphql/queries/auth.queries';
 import { useEffect } from 'react';
+import type { User } from '@/types';
+
+interface MeQueryData {
+  me: User;
+}
 
 export function useAuth() {
   const router = useRouter();
@@ -12,17 +17,8 @@ export function useAuth() {
   const isAuthenticated = !!token && !!user;
 
   // Загружаем данные пользователя если есть токен
-  const { data, loading, error } = useQuery(ME_QUERY, {
+  const { data, loading, error } = useQuery<MeQueryData>(ME_QUERY, {
     skip: !token,
-    onCompleted: (data) => {
-      if (data?.me) {
-        setUser(data.me);
-      }
-    },
-    onError: () => {
-      // Если токен невалидный, выходим
-      logout();
-    },
   });
 
   useEffect(() => {
@@ -30,6 +26,13 @@ export function useAuth() {
       setUser(data.me);
     }
   }, [token, data, setUser]);
+
+  useEffect(() => {
+    if (error) {
+      // Если токен невалидный, выходим
+      logout();
+    }
+  }, [error, logout]);
 
   const handleLogout = () => {
     logout();
