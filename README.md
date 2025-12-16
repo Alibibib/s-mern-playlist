@@ -65,12 +65,21 @@ This will start:
 
 ### 3. Install Dependencies
 
+**Backend:**
 ```bash
 cd server
 npm install
 ```
 
+**Frontend:**
+```bash
+cd client
+npm install
+```
+
 ### 4. Configure Environment Variables
+
+**Backend (server/.env):**
 
 Copy the example environment file and update it:
 
@@ -94,20 +103,65 @@ CLIENT_URL=http://localhost:3000
 
 ⚠️ **Important**: Change `JWT_SECRET` to a secure random string in production!
 
-### 5. Start the Server
-
-#### Development Mode (with hot reload)
+**Frontend (client/.env.local):**
 ```bash
-npm run dev
+cd client
+cp .env.example .env.local
 ```
 
-#### Production Mode
+Edit `client/.env.local`:
+```env
+NEXT_PUBLIC_GRAPHQL_URL=http://localhost:4000/graphql
+NEXT_PUBLIC_WS_URL=ws://localhost:4000/graphql
+NEXT_PUBLIC_API_URL=http://localhost:4000
+```
+
+### 5. Start the Application
+
+#### Development Mode
+
+**Backend Server:**
 ```bash
+cd server
+npm run dev
+```
+Server will start on `http://localhost:4000`
+
+**Frontend Client (in another terminal):**
+```bash
+cd client
+npm run dev
+```
+Frontend will start on `http://localhost:3000`
+
+#### Production Mode
+
+**Backend:**
+```bash
+cd server
 npm run build
 npm start
 ```
 
-The server will start on `http://localhost:4000`
+**Frontend:**
+```bash
+cd client
+npm run build
+npm start
+```
+
+#### Using Docker Compose (All Services)
+
+```bash
+docker-compose up -d --build
+```
+
+This will start:
+- MongoDB on `localhost:27017`
+- Redis on `localhost:6379`
+- Backend server on `localhost:4000`
+- Frontend client on `localhost:3000`
+- Mongo Express on `localhost:8081`
 
 ## 🎯 Quick Start
 
@@ -251,9 +305,32 @@ s-mern-playlist/
 │   ├── .env.example          # Environment variables template
 │   ├── package.json          # Dependencies and scripts
 │   └── tsconfig.json         # TypeScript configuration
+├── client/                    # Frontend application (Next.js)
+│   ├── app/                   # Next.js App Router
+│   │   ├── layout.tsx        # Root layout
+│   │   ├── page.tsx          # Home page
+│   │   ├── login/            # Login page
+│   │   ├── register/          # Register page
+│   │   ├── playlists/        # Playlist pages
+│   │   ├── songs/            # Songs page
+│   │   └── profile/          # Profile page
+│   ├── components/            # React components
+│   │   ├── ui/               # Base UI components
+│   │   ├── auth/             # Auth components
+│   │   ├── playlist/         # Playlist components
+│   │   └── song/             # Song components
+│   ├── lib/                   # Utilities and configuration
+│   │   ├── apollo/           # Apollo Client setup
+│   │   ├── store/            # Zustand stores
+│   │   ├── graphql/          # GraphQL operations
+│   │   └── validation/       # Zod schemas
+│   ├── hooks/                # Custom React hooks
+│   ├── types/                # TypeScript types
+│   └── package.json          # Dependencies and scripts
 ├── docker-compose.yml        # Docker services configuration
-├── upload-music.html         # Music upload interface
+├── upload-music.html         # Music upload interface (legacy)
 ├── MUSIC_UPLOAD_GUIDE.md     # Detailed upload guide (Russian)
+├── REALTIME_TESTING.md       # Real-time subscriptions testing guide
 └── README.md                 # This file
 ```
 
@@ -372,9 +449,11 @@ This will create:
 
 ## 🔄 Real-time Subscriptions
 
-The application supports real-time updates via GraphQL Subscriptions over WebSocket.
+The application supports real-time updates via GraphQL Subscriptions over WebSocket. This allows multiple users to see changes to playlists instantly without refreshing the page.
 
 ### How to Test Real-time Updates
+
+#### Method 1: Using GraphQL Playground (Backend Testing)
 
 1. **Start the server** (if not already running):
    ```bash
@@ -384,21 +463,17 @@ The application supports real-time updates via GraphQL Subscriptions over WebSoc
 
 2. **Open GraphQL Playground** at `http://localhost:4000/graphql`
 
-3. **Subscribe to events** using WebSocket:
+3. **Get authentication token**:
+   - Register or login to get a JWT token
+   - Copy the token from the response
 
-   **Example: Subscribe to playlist updates**
-   ```graphql
-   subscription {
-     playlistUpdated(playlistId: "YOUR_PLAYLIST_ID") {
-       id
-       title
-       description
-       isPublic
-     }
-   }
-   ```
+4. **Set up WebSocket connection**:
+   - In GraphQL Playground, click on the "Subscriptions" tab
+   - Add the authorization header: `{"authorization": "Bearer YOUR_TOKEN"}`
 
-   **Example: Subscribe to song additions**
+5. **Subscribe to events**:
+
+   **Subscribe to song additions:**
    ```graphql
    subscription {
      songAddedToPlaylist(playlistId: "YOUR_PLAYLIST_ID") {
@@ -407,23 +482,62 @@ The application supports real-time updates via GraphQL Subscriptions over WebSoc
          id
          title
          artist
+         duration
        }
-       playlist {
-         id
-         title
+       addedBy {
+         username
        }
+       createdAt
      }
    }
    ```
 
-4. **Trigger an event** in another tab/window:
+   **Subscribe to playlist updates:**
+   ```graphql
+   subscription {
+     playlistUpdated(playlistId: "YOUR_PLAYLIST_ID") {
+       id
+       title
+       description
+       isPublic
+       updatedAt
+     }
+   }
+   ```
+
+6. **Trigger an event** in another tab/window or using the frontend:
    - Add a song to the playlist
-   - Update the playlist
+   - Update the playlist title or description
    - Add a contributor
 
-5. **See the update** appear in real-time in your subscription!
+7. **See the update** appear in real-time in your subscription!
 
-For detailed step-by-step instructions, see [REALTIME_TESTING.md](REALTIME_TESTING.md).
+#### Method 2: Using Frontend Application (Recommended)
+
+1. **Start both server and client**:
+   ```bash
+   # Terminal 1: Start server
+   cd server
+   npm run dev
+
+   # Terminal 2: Start client
+   cd client
+   npm run dev
+   ```
+
+2. **Open the frontend** at `http://localhost:3000`
+
+3. **Login** with test credentials (see Test Users section)
+
+4. **Navigate to a playlist** (`/playlists/[id]`)
+
+5. **Open the same playlist in another browser/tab** (or ask a friend to open it)
+
+6. **Add a song** to the playlist in one window
+
+7. **See the song appear automatically** in the other window without refreshing!
+
+For detailed step-by-step instructions with screenshots, see [REALTIME_TESTING.md](REALTIME_TESTING.md).
 
 ## 🔍 Linting & Formatting
 
@@ -561,29 +675,64 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ### Demo Environment
 
-**Frontend**: Coming soon (in development)  
-**GraphQL Endpoint**: `http://localhost:4000/graphql`  
-**WebSocket Endpoint**: `ws://localhost:4000/graphql`  
-**Health Check**: `http://localhost:4000/health`
+**Frontend**: `http://localhost:3000` (Next.js application)  
+**Backend API**: `http://localhost:4000/graphql` (GraphQL endpoint)  
+**WebSocket**: `ws://localhost:4000/graphql` (Real-time subscriptions)  
+**Health Check**: `http://localhost:4000/health`  
+**Mongo Express**: `http://localhost:8081` (Database GUI)
 
-### Test Users
+### Quick Start with Test Users
 
-After running `npm run seed`, you can use these test accounts:
+1. **Start the application**:
+   ```bash
+   # Start MongoDB and Redis
+   docker-compose up -d
 
-| Email | Password | Username |
-|-------|----------|----------|
-| `alice@example.com` | `password123` | alice |
-| `bob@example.com` | `password123` | bob |
-| `charlie@example.com` | `password123` | charlie |
+   # Start backend server
+   cd server
+   npm install
+   npm run seed  # Populate database with test data
+   npm run dev
+
+   # Start frontend (in another terminal)
+   cd client
+   npm install
+   npm run dev
+   ```
+
+2. **Access the frontend** at `http://localhost:3000`
+
+3. **Login with test credentials** (created by seed script):
+
+| Email | Password | Username | Role |
+|-------|----------|----------|------|
+| `alice@example.com` | `password123` | alice | Test User |
+| `bob@example.com` | `password123` | bob | Test User |
+| `charlie@example.com` | `password123` | charlie | Test User |
+
+4. **Explore the application**:
+   - View public playlists on the home page
+   - Create your own playlists
+   - Add songs to playlists
+   - Test real-time collaboration (open same playlist in multiple tabs)
 
 **Note**: These are test accounts created by the seed script. In production, use your own registered accounts.
 
 ## 👥 Team & Roles
 
-**Project Maintainer**: Alibibib  
+**Project Maintainer & Lead Developer**: Alibibib  
 - GitHub: [@Alibibib](https://github.com/Alibibib)
+- Role: Full-stack development, architecture, project management
 
 **Contributions**: This project is open to contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Project Structure & Responsibilities
+
+- **Backend Development**: GraphQL API, WebSocket subscriptions, database models
+- **Frontend Development**: Next.js application, React components, state management
+- **DevOps**: Docker configuration, CI/CD setup, deployment
+- **Testing**: Unit tests, integration tests, E2E testing
+- **Documentation**: API docs, user guides, technical documentation
 
 ## 👤 Author
 
