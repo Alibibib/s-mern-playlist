@@ -140,6 +140,19 @@ const startServer = async () => {
         });
     });
 
+    app.get('/metrics', (_req, res) => {
+        const stats = connectionManager.getStats();
+        const uptimeSeconds = Math.round(process.uptime());
+        const metrics = [
+            `app_uptime_seconds ${uptimeSeconds}`,
+            `app_websocket_active_connections ${stats.activeConnections}`,
+            `app_websocket_active_subscriptions ${stats.activeSubscriptions}`,
+        ].join('\n');
+
+        res.setHeader('Content-Type', 'text/plain; version=0.0.4');
+        res.status(200).send(metrics);
+    });
+
     app.post('/api/admin/cleanup', async (req, res) => {
         const adminKey = req.headers['x-admin-key'];
         if (adminKey !== process.env.ADMIN_KEY) {
@@ -176,6 +189,31 @@ const startServer = async () => {
         console.log(`�📊 Health check at http://localhost:${PORT}/health`);
         console.log(`🔐 JWT_SECRET is ${process.env.JWT_SECRET ? 'configured' : 'using default (UNSAFE!)'}`);
     });
+
+    const gracefulShutdown = async () => {
+        console.log('🛑 Shutting down gracefully...');
+        try {
+            await serverCleanup.dispose();
+        } catch (err) {
+            console.error('Error disposing subscriptions:', err);
+        }
+
+        await new Promise<void>((resolve) => {
+            httpServer.close(() => resolve());
+        });
+
+        try {
+            await mongoose.connection.close();
+        } catch (err) {
+            console.error('Error closing MongoDB connection:', err);
+        }
+
+        console.log('✅ Shutdown complete');
+        process.exit(0);
+    };
+
+    process.on('SIGTERM', gracefulShutdown);
+    process.on('SIGINT', gracefulShutdown);
 };
 
 startServer().catch((err) => {
