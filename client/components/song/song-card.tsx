@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { Song } from '@/types';
 import { Card } from '@/components/ui/card';
 import { formatDuration } from '@/lib/utils/format';
@@ -9,7 +10,7 @@ interface SongCardProps {
 }
 
 export function SongCard({ song, showPlayer = false }: SongCardProps) {
-  return (
+  const content = (
     <Card>
       <div className={showPlayer ? 'mb-4' : ''}>
         <h3 className="text-lg font-semibold mb-1">{song.title}</h3>
@@ -21,5 +22,15 @@ export function SongCard({ song, showPlayer = false }: SongCardProps) {
       </div>
       {showPlayer && <SongPlayer song={song} />}
     </Card>
+  );
+
+  if (showPlayer) {
+    return content;
+  }
+
+  return (
+    <Link href={`/songs/${song.id}`} className="block hover:opacity-80 transition-opacity">
+      {content}
+    </Link>
   );
 }
