@@ -5,7 +5,15 @@ import { PLAYLIST_QUERY } from '@/lib/graphql/queries/playlist.queries';
 import { useSubscription } from './use-subscription';
 import { SONG_ADDED_TO_PLAYLIST_SUBSCRIPTION } from '@/lib/graphql/subscriptions/playlist.subscriptions';
 import { useUIStore } from '@/lib/store/ui-store';
-import type { PlaylistSong } from '@/types';
+import type { PlaylistSong, Playlist } from '@/types';
+
+interface PlaylistQueryData {
+  playlist: Playlist;
+}
+
+interface PlaylistQueryVariables {
+  id: string;
+}
 
 export function usePlaylist(playlistId: string) {
   const { addNotification } = useUIStore();
@@ -15,7 +23,7 @@ export function usePlaylist(playlistId: string) {
     loading,
     error,
     refetch,
-  } = useQuery(PLAYLIST_QUERY, {
+  } = useQuery<PlaylistQueryData, PlaylistQueryVariables>(PLAYLIST_QUERY, {
     variables: { id: playlistId },
     skip: !playlistId,
   });
@@ -35,7 +43,7 @@ export function usePlaylist(playlistId: string) {
   });
 
   return {
-    playlist: data?.playlist,
+    playlist: data?.playlist as Playlist | undefined,
     loading,
     error,
     refetch,
