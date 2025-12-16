@@ -878,25 +878,65 @@ export const resolvers = {
         playlistUpdated: {
             subscribe: withFilter(
                 () => pubsub.asyncIterator([PLAYLIST_UPDATED]),
-                (payload: any, variables: { playlistId: string }) => payload.playlistId === variables.playlistId
+                async (payload: any, variables: { playlistId: string }, context: Context) => {
+                    if (payload.playlistId !== variables.playlistId) return false;
+                    if (!context?.user?.id) return false;
+
+                    try {
+                        await checkPlaylistAccess(variables.playlistId, context.user.id);
+                        return true;
+                    } catch {
+                        return false;
+                    }
+                }
             ),
         },
         songAddedToPlaylist: {
             subscribe: withFilter(
                 () => pubsub.asyncIterator([SONG_ADDED_TO_PLAYLIST]),
-                (payload: any, variables: { playlistId: string }) => payload.playlistId === variables.playlistId
+                async (payload: any, variables: { playlistId: string }, context: Context) => {
+                    if (payload.playlistId !== variables.playlistId) return false;
+                    if (!context?.user?.id) return false;
+
+                    try {
+                        await checkPlaylistAccess(variables.playlistId, context.user.id);
+                        return true;
+                    } catch {
+                        return false;
+                    }
+                }
             ),
         },
         songRemovedFromPlaylist: {
             subscribe: withFilter(
                 () => pubsub.asyncIterator([SONG_REMOVED_FROM_PLAYLIST]),
-                (payload: any, variables: { playlistId: string }) => payload.playlistId === variables.playlistId
+                async (payload: any, variables: { playlistId: string }, context: Context) => {
+                    if (payload.playlistId !== variables.playlistId) return false;
+                    if (!context?.user?.id) return false;
+
+                    try {
+                        await checkPlaylistAccess(variables.playlistId, context.user.id);
+                        return true;
+                    } catch {
+                        return false;
+                    }
+                }
             ),
         },
         contributorAdded: {
             subscribe: withFilter(
                 () => pubsub.asyncIterator([CONTRIBUTOR_ADDED]),
-                (payload: any, variables: { playlistId: string }) => payload.playlistId === variables.playlistId
+                async (payload: any, variables: { playlistId: string }, context: Context) => {
+                    if (payload.playlistId !== variables.playlistId) return false;
+                    if (!context?.user?.id) return false;
+
+                    try {
+                        await checkPlaylistAccess(variables.playlistId, context.user.id, ContributorRole.VIEWER);
+                        return true;
+                    } catch {
+                        return false;
+                    }
+                }
             ),
         },
     },
