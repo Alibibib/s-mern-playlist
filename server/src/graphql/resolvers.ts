@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { GraphQLError } from 'graphql';
-import { PubSub } from 'graphql-subscriptions';
+import { PubSub, withFilter } from 'graphql-subscriptions';
 import User, { IUser } from '../models/User';
 import Playlist, { IPlaylist } from '../models/Playlist';
 import Song, { ISong } from '../models/Song';
@@ -876,24 +876,28 @@ export const resolvers = {
             subscribe: () => pubsub.asyncIterator([USER_CREATED]),
         },
         playlistUpdated: {
-            subscribe: (_: any, { playlistId }: { playlistId: string }) => {
-                return pubsub.asyncIterator([PLAYLIST_UPDATED]);
-            },
+            subscribe: withFilter(
+                () => pubsub.asyncIterator([PLAYLIST_UPDATED]),
+                (payload: any, variables: { playlistId: string }) => payload.playlistId === variables.playlistId
+            ),
         },
         songAddedToPlaylist: {
-            subscribe: (_: any, { playlistId }: { playlistId: string }) => {
-                return pubsub.asyncIterator([SONG_ADDED_TO_PLAYLIST]);
-            },
+            subscribe: withFilter(
+                () => pubsub.asyncIterator([SONG_ADDED_TO_PLAYLIST]),
+                (payload: any, variables: { playlistId: string }) => payload.playlistId === variables.playlistId
+            ),
         },
         songRemovedFromPlaylist: {
-            subscribe: (_: any, { playlistId }: { playlistId: string }) => {
-                return pubsub.asyncIterator([SONG_REMOVED_FROM_PLAYLIST]);
-            },
+            subscribe: withFilter(
+                () => pubsub.asyncIterator([SONG_REMOVED_FROM_PLAYLIST]),
+                (payload: any, variables: { playlistId: string }) => payload.playlistId === variables.playlistId
+            ),
         },
         contributorAdded: {
-            subscribe: (_: any, { playlistId }: { playlistId: string }) => {
-                return pubsub.asyncIterator([CONTRIBUTOR_ADDED]);
-            },
+            subscribe: withFilter(
+                () => pubsub.asyncIterator([CONTRIBUTOR_ADDED]),
+                (payload: any, variables: { playlistId: string }) => payload.playlistId === variables.playlistId
+            ),
         },
     },
 
