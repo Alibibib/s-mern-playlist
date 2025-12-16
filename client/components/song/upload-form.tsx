@@ -1,16 +1,44 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useMutation } from '@apollo/client/react';
 import { API_URL } from '@/lib/utils/constants';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useUIStore } from '@/lib/store/ui-store';
+import { CREATE_SONG_MUTATION } from '@/lib/graphql/mutations/song.mutations';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { getErrorMessage } from '@/lib/utils/error';
+
+interface CreateSongMutationData {
+  createSong: {
+    id: string;
+    title: string;
+    artist: string;
+    duration: number;
+    fileId: string;
+    uploadedBy: {
+      id: string;
+      username: string;
+    };
+    createdAt: string;
+  };
+}
+
+interface CreateSongMutationVariables {
+  input: {
+    title: string;
+    artist: string;
+    duration: number;
+    fileId: string;
+  };
+}
 
 export function UploadForm() {
   const { token } = useAuthStore();
   const { addNotification } = useUIStore();
+  const [createSong] = useMutation<CreateSongMutationData, CreateSongMutationVariables>(CREATE_SONG_MUTATION);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -55,18 +83,49 @@ export function UploadForm() {
         return;
       }
 
-      await response.json();
-      addNotification({
-        message: 'File uploaded successfully!',
-        type: 'success',
-      });
+      const uploadResult = await response.json();
+      const fileId = uploadResult.fileId;
 
-      // Reset form
-      setFormData({ title: '', artist: '', duration: '' });
-      setFile(null);
+      if (!fileId) {
+        addNotification({
+          message: 'File uploaded but fileId not received',
+          type: 'error',
+        });
+        return;
+      }
+
+      // Create song record via GraphQL
+      try {
+        await createSong({
+          variables: {
+            input: {
+              title: formData.title,
+              artist: formData.artist,
+              duration: parseInt(formData.duration, 10),
+              fileId,
+            },
+          },
+        });
+        addNotification({
+          message: 'Song uploaded and created successfully!',
+          type: 'success',
+        });
+
+        // Reset form
+        setFormData({ title: '', artist: '', duration: '' });
+        setFile(null);
+      } catch (graphqlError) {
+        const errorMessage = getErrorMessage(
+          graphqlError,
+          'File uploaded but failed to create song record'
+        );
+        addNotification({
+          message: errorMessage,
+          type: 'error',
+        });
+      }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to upload file';
+      const errorMessage = getErrorMessage(error, 'Failed to upload file');
       addNotification({
         message: errorMessage,
         type: 'error',

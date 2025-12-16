@@ -3,7 +3,6 @@
 import { useMutation } from '@apollo/client/react';
 import { useRouter } from 'next/navigation';
 import { CREATE_PLAYLIST_MUTATION } from '@/lib/graphql/mutations/playlist.mutations';
-import { useAuth } from '@/hooks/use-auth';
 import { ProtectedRoute } from '@/components/ui/protected-route';
 import { PlaylistForm } from '@/components/playlist/playlist-form';
 import type { CreatePlaylistInput } from '@/lib/validation/schemas';
