@@ -7,7 +7,31 @@
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "baseUrl": "./src",
+        "paths": {
+            "@/*": [
+                "./*"
+            ],
+            "@models/*": [
+                "./models/*"
+            ],
+            "@graphql/*": [
+                "./graphql/*"
+            ],
+            "@utils/*": [
+                "./utils/*"
+            ],
+            "@services/*": [
+                "./services/*"
+            ],
+            "@validation/*": [
+                "./validation/*"
+            ],
+            "@middleware/*": [
+                "./middleware/*"
+            ]
+        }
     },
     "include": [
         "src/**/*"

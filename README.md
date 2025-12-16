@@ -298,7 +298,12 @@ s-mern-playlist/
 - `updateContributorRole(playlistId: ID!, userId: ID!, role: ContributorRole!)` - Update contributor role
 
 #### Subscriptions
-- `songAddedToPlaylist(playlistId: ID!)` - Subscribe to song additions
+- `serverTime` - Server time updates (for testing)
+- `userCreated` - New user registration events
+- `playlistUpdated(playlistId: ID!)` - Playlist update events
+- `songAddedToPlaylist(playlistId: ID!)` - Song addition events
+- `songRemovedFromPlaylist(playlistId: ID!)` - Song removal events
+- `contributorAdded(playlistId: ID!)` - Contributor addition events
 
 ### Contributor Roles
 
@@ -364,6 +369,61 @@ This will create:
 - Email: `alice@example.com` | Password: `password123`
 - Email: `bob@example.com` | Password: `password123`
 - Email: `charlie@example.com` | Password: `password123`
+
+## 🔄 Real-time Subscriptions
+
+The application supports real-time updates via GraphQL Subscriptions over WebSocket.
+
+### How to Test Real-time Updates
+
+1. **Start the server** (if not already running):
+   ```bash
+   cd server
+   npm run dev
+   ```
+
+2. **Open GraphQL Playground** at `http://localhost:4000/graphql`
+
+3. **Subscribe to events** using WebSocket:
+
+   **Example: Subscribe to playlist updates**
+   ```graphql
+   subscription {
+     playlistUpdated(playlistId: "YOUR_PLAYLIST_ID") {
+       id
+       title
+       description
+       isPublic
+     }
+   }
+   ```
+
+   **Example: Subscribe to song additions**
+   ```graphql
+   subscription {
+     songAddedToPlaylist(playlistId: "YOUR_PLAYLIST_ID") {
+       id
+       song {
+         id
+         title
+         artist
+       }
+       playlist {
+         id
+         title
+       }
+     }
+   }
+   ```
+
+4. **Trigger an event** in another tab/window:
+   - Add a song to the playlist
+   - Update the playlist
+   - Add a contributor
+
+5. **See the update** appear in real-time in your subscription!
+
+For detailed step-by-step instructions, see [REALTIME_TESTING.md](REALTIME_TESTING.md).
 
 ## 🔍 Linting & Formatting
 
@@ -496,6 +556,34 @@ Contributions are welcome! Please follow these steps:
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🎮 Demo & Test Users
+
+### Demo Environment
+
+**Frontend**: Coming soon (in development)  
+**GraphQL Endpoint**: `http://localhost:4000/graphql`  
+**WebSocket Endpoint**: `ws://localhost:4000/graphql`  
+**Health Check**: `http://localhost:4000/health`
+
+### Test Users
+
+After running `npm run seed`, you can use these test accounts:
+
+| Email | Password | Username |
+|-------|----------|----------|
+| `alice@example.com` | `password123` | alice |
+| `bob@example.com` | `password123` | bob |
+| `charlie@example.com` | `password123` | charlie |
+
+**Note**: These are test accounts created by the seed script. In production, use your own registered accounts.
+
+## 👥 Team & Roles
+
+**Project Maintainer**: Alibibib  
+- GitHub: [@Alibibib](https://github.com/Alibibib)
+
+**Contributions**: This project is open to contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 👤 Author
 
