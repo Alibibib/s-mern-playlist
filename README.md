@@ -308,8 +308,11 @@ s-mern-playlist/
 
 ## 🧪 Testing
 
-Run tests:
+### Running Tests
+
+Run all tests:
 ```bash
+cd server
 npm test
 ```
 
@@ -322,6 +325,45 @@ Generate coverage report:
 ```bash
 npm test -- --coverage
 ```
+
+### Test Structure
+
+- **Unit Tests**: Located in `src/**/__tests__/` directories
+  - Resolver tests: `src/graphql/__tests__/resolvers.test.ts`
+  - Service tests: `src/services/__tests__/pubsub.service.test.ts`
+  - Validation tests: `src/validation/__tests__/validate.test.ts`
+- **Integration Tests**: `src/__tests__/integration/graphql-api.test.ts`
+
+### Test Coverage
+
+Tests cover:
+- User registration and authentication
+- Playlist creation and access control
+- Song management
+- Contributor management
+- Input validation
+- WebSocket connection management
+
+## 🌱 Database Seeding
+
+Populate the database with test data:
+
+```bash
+cd server
+npm run seed
+```
+
+This will create:
+- 3 test users (alice, bob, charlie)
+- 8 test songs
+- 5 playlists (mix of public and private)
+- Playlist-song relationships
+- Contributors with different roles
+
+**Test User Credentials:**
+- Email: `alice@example.com` | Password: `password123`
+- Email: `bob@example.com` | Password: `password123`
+- Email: `charlie@example.com` | Password: `password123`
 
 ## 🔍 Linting & Formatting
 
