@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/lib/store/auth-store';
+import { useAuthStore, useIsAuthenticated } from '@/lib/store/auth-store';
 import { useQuery } from '@apollo/client/react';
 import { ME_QUERY } from '@/lib/graphql/queries/auth.queries';
 import { useEffect } from 'react';
@@ -14,7 +14,7 @@ interface MeQueryData {
 export function useAuth() {
   const router = useRouter();
   const { token, user, login, logout, setUser } = useAuthStore();
-  const isAuthenticated = !!token && !!user;
+  const isAuthenticated = useIsAuthenticated();
 
   // Загружаем данные пользователя если есть токен
   const { data, loading, error } = useQuery<MeQueryData>(ME_QUERY, {
