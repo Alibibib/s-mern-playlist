@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
-import { uploadFileToGridFS, downloadFileFromGridFS, getFileMetadata } from '../utils/gridfs';
+import { ObjectId } from 'mongodb';
+import { uploadFileToGridFS, getFileMetadata, getGridFSBucket } from '../utils/gridfs';
 import { getContextUser } from '../middleware/auth';
 
 const router = Router();
@@ -82,10 +83,11 @@ router.post('/upload', upload.single('audio'), async (req: Request, res: Respons
     }
 });
 
-// Download/Stream audio file
+// Download/Stream audio file with Range support
 router.get('/stream/:fileId', async (req: Request, res: Response) => {
     try {
         const { fileId } = req.params;
+        const range = req.headers.range;
 
         // Get file metadata
         const metadata = await getFileMetadata(fileId);
@@ -94,16 +96,63 @@ router.get('/stream/:fileId', async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'File not found' });
         }
 
-        // Download file
-        const fileBuffer = await downloadFileFromGridFS(fileId);
+        const fileSize = metadata.length;
+        const contentType = metadata.metadata?.contentType || 'audio/mpeg';
+        const bucket = getGridFSBucket();
 
-        // Set headers for audio streaming
-        res.setHeader('Content-Type', metadata.metadata?.contentType || 'audio/mpeg');
-        res.setHeader('Content-Length', fileBuffer.length);
+        // No Range header — stream full file
+        if (!range) {
+            res.status(200);
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Length', fileSize);
+            res.setHeader('Accept-Ranges', 'bytes');
+            res.setHeader('Content-Disposition', `inline; filename="${metadata.filename}"`);
+
+            const downloadStream = bucket.openDownloadStream(new ObjectId(fileId));
+            downloadStream.on('error', (err) => {
+                console.error('Stream error:', err);
+                res.destroy(err);
+            });
+            downloadStream.pipe(res);
+            return;
+        }
+
+        // Parse Range header
+        const rangeMatch = /^bytes=(\d*)-(\d*)$/.exec(range);
+        if (!rangeMatch) {
+            res.setHeader('Content-Range', `bytes */${fileSize}`);
+            return res.status(416).end();
+        }
+
+        const start = rangeMatch[1] ? parseInt(rangeMatch[1], 10) : 0;
+        const end = rangeMatch[2] ? parseInt(rangeMatch[2], 10) : fileSize - 1;
+
+        // Validate range
+        if (isNaN(start) || isNaN(end) || start > end || start >= fileSize) {
+            res.setHeader('Content-Range', `bytes */${fileSize}`);
+            return res.status(416).end();
+        }
+
+        const chunkSize = end - start + 1;
+
+        res.status(206);
+        res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
         res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Content-Length', chunkSize);
+        res.setHeader('Content-Type', contentType);
         res.setHeader('Content-Disposition', `inline; filename="${metadata.filename}"`);
 
-        res.send(fileBuffer);
+        const downloadStream = bucket.openDownloadStream(new ObjectId(fileId), {
+            start,
+            end: end + 1 // GridFS end is exclusive
+        });
+
+        downloadStream.on('error', (err) => {
+            console.error('Range stream error:', err);
+            res.destroy(err);
+        });
+
+        downloadStream.pipe(res);
     } catch (error) {
         console.error('Stream error:', error);
         res.status(500).json({
