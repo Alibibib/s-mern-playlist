@@ -9,6 +9,16 @@ import Song, { ISong } from '../models/Song';
 import PlaylistSong, { IPlaylistSong } from '../models/PlaylistSong';
 import Contributor, { IContributor, ContributorRole } from '../models/Contributor';
 import { deleteFileFromGridFS } from '../utils/gridfs';
+import {
+    addContributorSchema,
+    createPlaylistSchema,
+    createSongSchema,
+    loginSchema,
+    registerSchema,
+    updatePlaylistSchema,
+    songIdsArraySchema,
+} from '../validation/schemas';
+import { validate } from '../validation/validate';
 
 const pubsub = new PubSub();
 
@@ -385,10 +395,10 @@ export const resolvers = {
     Mutation: {
         // User mutations
         register: async (_: any, { input }: { input: RegisterInput }) => {
-            validateRegisterInput(input);
+            const validatedInput = validate(registerSchema, input);
 
             const existingUser = await User.findOne({
-                $or: [{ email: input.email }, { username: input.username }],
+                $or: [{ email: validatedInput.email }, { username: validatedInput.username }],
             });
 
             if (existingUser) {
@@ -400,14 +410,14 @@ export const resolvers = {
                 });
             }
 
-            const hashedPassword = await bcrypt.hash(input.password, 12);
+            const hashedPassword = await bcrypt.hash(validatedInput.password, 12);
 
             const newUser = new User({
-                username: input.username,
-                email: input.email,
+                username: validatedInput.username,
+                email: validatedInput.email,
                 password: hashedPassword,
-                firstName: input.firstName,
-                lastName: input.lastName,
+                firstName: validatedInput.firstName,
+                lastName: validatedInput.lastName,
             });
 
             const savedUser = await newUser.save();
@@ -424,14 +434,10 @@ export const resolvers = {
         },
 
         login: async (_: any, { input }: { input: LoginInput }) => {
-            if (!input.email || !input.password) {
-                throw new GraphQLError('Email and password are required', {
-                    extensions: { code: 'VALIDATION_ERROR' },
-                });
-            }
+            const validatedInput = validate(loginSchema, input);
 
             const user = await User.findOne({
-                email: input.email,
+                email: validatedInput.email,
                 isDeleted: false
             });
 
@@ -442,7 +448,7 @@ export const resolvers = {
             }
 
             const isPasswordValid = await bcrypt.compare(
-                input.password,
+                validatedInput.password,
                 user.password
             );
 
@@ -532,17 +538,13 @@ export const resolvers = {
                 });
             }
 
-            if (!input.title || input.title.trim().length === 0) {
-                throw new GraphQLError('Title is required', {
-                    extensions: { code: 'VALIDATION_ERROR' },
-                });
-            }
+            const validatedInput = validate(createPlaylistSchema, input);
 
             const newPlaylist = new Playlist({
-                title: input.title,
-                description: input.description || '',
+                title: validatedInput.title,
+                description: validatedInput.description || '',
                 ownerId: context.user.id,
-                isPublic: input.isPublic !== undefined ? input.isPublic : true,
+                isPublic: validatedInput.isPublic !== undefined ? validatedInput.isPublic : true,
             });
 
             const savedPlaylist = await newPlaylist.save();
@@ -560,13 +562,16 @@ export const resolvers = {
                 });
             }
 
+            // Validate payload
+            const validatedInput = validate(updatePlaylistSchema, input);
+
             // Check if user has EDITOR or ADMIN role
             await checkPlaylistAccess(id, context.user.id, ContributorRole.EDITOR);
 
             const updateData: Partial<IPlaylist> = {};
-            if (input.title !== undefined) updateData.title = input.title;
-            if (input.description !== undefined) updateData.description = input.description;
-            if (input.isPublic !== undefined) updateData.isPublic = input.isPublic;
+            if (validatedInput.title !== undefined) updateData.title = validatedInput.title;
+            if (validatedInput.description !== undefined) updateData.description = validatedInput.description;
+            if (validatedInput.isPublic !== undefined) updateData.isPublic = validatedInput.isPublic;
 
             const playlist = await Playlist.findOneAndUpdate(
                 { _id: id, isDeleted: false },
@@ -616,17 +621,13 @@ export const resolvers = {
                 });
             }
 
-            if (!input.title || !input.artist || !input.duration || !input.fileId) {
-                throw new GraphQLError('All fields are required', {
-                    extensions: { code: 'VALIDATION_ERROR' },
-                });
-            }
+            const validatedInput = validate(createSongSchema, input);
 
             const newSong = new Song({
-                title: input.title,
-                artist: input.artist,
-                duration: input.duration,
-                fileId: input.fileId,
+                title: validatedInput.title,
+                artist: validatedInput.artist,
+                duration: validatedInput.duration,
+                fileId: validatedInput.fileId,
                 uploadedBy: context.user.id,
             });
 
@@ -646,10 +647,12 @@ export const resolvers = {
             }
 
             // Check if user has EDITOR role
-            await checkPlaylistAccess(playlistId, context.user.id, ContributorRole.EDITOR);
+            const validatedPlaylistId = validate(mongoIdSchema, playlistId);
+            const validatedSongId = validate(mongoIdSchema, songId);
+            await checkPlaylistAccess(validatedPlaylistId, context.user.id, ContributorRole.EDITOR);
 
             // Check if song exists
-            const song = await Song.findOne({ _id: songId, isDeleted: false });
+            const song = await Song.findOne({ _id: validatedSongId, isDeleted: false });
             if (!song) {
                 throw new GraphQLError('Song not found', {
                     extensions: { code: 'NOT_FOUND' },
@@ -658,8 +661,8 @@ export const resolvers = {
 
             // Check if song already active in playlist
             const existingActive = await PlaylistSong.findOne({
-                playlistId,
-                songId,
+                playlistId: validatedPlaylistId,
+                songId: validatedSongId,
                 isDeleted: false
             });
 
@@ -671,13 +674,13 @@ export const resolvers = {
 
             // Check for soft-deleted entry to restore
             const existingDeleted = await PlaylistSong.findOne({
-                playlistId,
-                songId,
+                playlistId: validatedPlaylistId,
+                songId: validatedSongId,
                 isDeleted: true
             });
 
             // Get next order number
-            const lastSong = await PlaylistSong.findOne({ playlistId, isDeleted: false })
+            const lastSong = await PlaylistSong.findOne({ playlistId: validatedPlaylistId, isDeleted: false })
                 .sort({ order: -1 });
             const nextOrder = lastSong ? lastSong.order + 1 : 0;
 
@@ -690,8 +693,8 @@ export const resolvers = {
                 savedPlaylistSong = await existingDeleted.save();
             } else {
                 const newPlaylistSong = new PlaylistSong({
-                    playlistId,
-                    songId,
+                    playlistId: validatedPlaylistId,
+                    songId: validatedSongId,
                     addedBy: context.user.id,
                     order: nextOrder,
                 });
@@ -702,7 +705,7 @@ export const resolvers = {
             // Publish real-time update
             pubsub.publish(SONG_ADDED_TO_PLAYLIST, {
                 songAddedToPlaylist: formatPlaylistSong(savedPlaylistSong),
-                playlistId,
+                playlistId: validatedPlaylistId,
             });
 
             return formatPlaylistSong(savedPlaylistSong);
@@ -719,11 +722,14 @@ export const resolvers = {
                 });
             }
 
+            const validatedPlaylistId = validate(mongoIdSchema, playlistId);
+            const validatedSongId = validate(mongoIdSchema, songId);
+
             // Check if user has EDITOR role
-            await checkPlaylistAccess(playlistId, context.user.id, ContributorRole.EDITOR);
+            await checkPlaylistAccess(validatedPlaylistId, context.user.id, ContributorRole.EDITOR);
 
             const playlistSong = await PlaylistSong.findOneAndUpdate(
-                { playlistId, songId, isDeleted: false },
+                { playlistId: validatedPlaylistId, songId: validatedSongId, isDeleted: false },
                 { isDeleted: true },
                 { new: true }
             );
@@ -736,8 +742,8 @@ export const resolvers = {
 
             // Publish real-time update
             pubsub.publish(SONG_REMOVED_FROM_PLAYLIST, {
-                songRemovedFromPlaylist: songId,
-                playlistId,
+                songRemovedFromPlaylist: validatedSongId,
+                playlistId: validatedPlaylistId,
             });
 
             return true;
@@ -843,13 +849,16 @@ export const resolvers = {
                 });
             }
 
+            const validatedPlaylistId = validate(mongoIdSchema, playlistId);
+            const validatedSongIds = validate(songIdsArraySchema, songIds);
+
             // Check if user has EDITOR role
-            await checkPlaylistAccess(playlistId, context.user.id, ContributorRole.EDITOR);
+            await checkPlaylistAccess(validatedPlaylistId, context.user.id, ContributorRole.EDITOR);
 
             // Update order for each song
-            const updates = songIds.map((songId, index) =>
+            const updates = validatedSongIds.map((songId, index) =>
                 PlaylistSong.findOneAndUpdate(
-                    { playlistId, songId, isDeleted: false },
+                    { playlistId: validatedPlaylistId, songId, isDeleted: false },
                     { order: index },
                     { new: true }
                 )
@@ -869,11 +878,13 @@ export const resolvers = {
                 });
             }
 
+            const validatedInput = validate(addContributorSchema, input);
+
             // Check if user has ADMIN role
-            await checkPlaylistAccess(input.playlistId, context.user.id, ContributorRole.ADMIN);
+            await checkPlaylistAccess(validatedInput.playlistId, context.user.id, ContributorRole.ADMIN);
 
             // Check if user exists
-            const user = await User.findOne({ _id: input.userId, isDeleted: false });
+            const user = await User.findOne({ _id: validatedInput.userId, isDeleted: false });
             if (!user) {
                 throw new GraphQLError('User not found', {
                     extensions: { code: 'NOT_FOUND' },
@@ -882,8 +893,8 @@ export const resolvers = {
 
             // Check if already active contributor
             const existingActive = await Contributor.findOne({
-                playlistId: input.playlistId,
-                userId: input.userId,
+                playlistId: validatedInput.playlistId,
+                userId: validatedInput.userId,
                 isDeleted: false
             });
 
@@ -895,8 +906,8 @@ export const resolvers = {
 
             // Check for soft-deleted contributor to restore
             const existingDeleted = await Contributor.findOne({
-                playlistId: input.playlistId,
-                userId: input.userId,
+                playlistId: validatedInput.playlistId,
+                userId: validatedInput.userId,
                 isDeleted: true
             });
 
@@ -904,14 +915,14 @@ export const resolvers = {
 
             if (existingDeleted) {
                 existingDeleted.isDeleted = false;
-                existingDeleted.role = input.role;
+                existingDeleted.role = validatedInput.role;
                 existingDeleted.invitedBy = new mongoose.Types.ObjectId(context.user.id);
                 savedContributor = await existingDeleted.save();
             } else {
                 const newContributor = new Contributor({
-                    playlistId: input.playlistId,
-                    userId: input.userId,
-                    role: input.role,
+                    playlistId: validatedInput.playlistId,
+                    userId: validatedInput.userId,
+                    role: validatedInput.role,
                     invitedBy: context.user.id,
                 });
 
