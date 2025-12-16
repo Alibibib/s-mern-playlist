@@ -16,7 +16,7 @@ export const loginSchema = z.object({
 export const createPlaylistSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  isPublic: z.boolean().default(false),
+  isPublic: z.boolean(),
 });
 
 export const updatePlaylistSchema = z.object({

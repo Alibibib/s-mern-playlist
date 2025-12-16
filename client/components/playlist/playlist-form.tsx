@@ -24,7 +24,10 @@ export function PlaylistForm({
     formState: { errors },
   } = useForm<CreatePlaylistInput>({
     resolver: zodResolver(createPlaylistSchema),
-    defaultValues: initialData,
+    defaultValues: {
+      isPublic: false,
+      ...initialData,
+    },
   });
 
   return (
