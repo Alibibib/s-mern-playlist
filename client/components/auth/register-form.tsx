@@ -11,12 +11,24 @@ import { useUIStore } from '@/lib/store/ui-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import type { User } from '@/types';
+
+interface RegisterMutationData {
+  register: {
+    token: string;
+    user: User;
+  };
+}
+
+interface RegisterMutationVariables {
+  input: RegisterInput;
+}
 
 export function RegisterForm() {
   const router = useRouter();
   const { login } = useAuthStore();
   const { addNotification } = useUIStore();
-  const [registerMutation, { loading }] = useMutation(REGISTER_MUTATION);
+  const [registerMutation, { loading }] = useMutation<RegisterMutationData, RegisterMutationVariables>(REGISTER_MUTATION);
 
   const {
     register,

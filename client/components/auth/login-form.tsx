@@ -12,12 +12,24 @@ import { useUIStore } from '@/lib/store/ui-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import type { User } from '@/types';
+
+interface LoginMutationData {
+  login: {
+    token: string;
+    user: User;
+  };
+}
+
+interface LoginMutationVariables {
+  input: LoginInput;
+}
 
 export function LoginForm() {
   const router = useRouter();
   const { login } = useAuthStore();
   const { addNotification } = useUIStore();
-  const [loginMutation, { loading }] = useMutation(LOGIN_MUTATION);
+  const [loginMutation, { loading }] = useMutation<LoginMutationData, LoginMutationVariables>(LOGIN_MUTATION);
 
   const {
     register,
