@@ -61,7 +61,7 @@ describe('GraphQL API Integration Test', () => {
       lastName: 'User',
     };
 
-    const registerResult = await resolvers.Mutation.register(null, { input: registerInput }, {} as any);
+    const registerResult = await resolvers.Mutation.register(null, { input: registerInput });
     expect(registerResult.user).toBeDefined();
     expect(registerResult.token).toBeDefined();
 
@@ -78,8 +78,7 @@ describe('GraphQL API Integration Test', () => {
     // Step 2: Login with the new user
     const loginResult = await resolvers.Mutation.login(
       null,
-      { input: { email: registerInput.email, password: registerInput.password } },
-      {} as any
+      { input: { email: registerInput.email, password: registerInput.password } }
     );
     expect(loginResult.user.email).toBe(registerInput.email);
     expect(loginResult.token).toBeDefined();
