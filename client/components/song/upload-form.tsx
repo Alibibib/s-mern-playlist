@@ -40,10 +40,22 @@ export function UploadForm() {
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        let errorMessage = 'Upload failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        addNotification({
+          message: errorMessage,
+          type: 'error',
+        });
+        return;
       }
 
-      const result = await response.json();
+      await response.json();
       addNotification({
         message: 'File uploaded successfully!',
         type: 'success',

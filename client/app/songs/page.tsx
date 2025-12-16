@@ -3,11 +3,10 @@
 import { useQuery } from '@apollo/client/react';
 import { SONGS_QUERY } from '@/lib/graphql/queries/song.queries';
 import { useAuth } from '@/hooks/use-auth';
-import { SongPlayer } from '@/components/song/song-player';
+import { SongCard } from '@/components/song/song-card';
+import { UploadForm } from '@/components/song/upload-form';
 import { Loading } from '@/components/ui/loading';
 import { Error } from '@/components/ui/error';
-import { Card } from '@/components/ui/card';
-import { formatDuration } from '@/lib/utils/format';
 import { Button } from '@/components/ui/button';
 import type { Song } from '@/types';
 
@@ -36,6 +35,9 @@ export default function SongsPage() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">All Songs</h1>
+        <div className="mb-8">
+          <UploadForm />
+        </div>
         {loading ? (
           <Loading />
         ) : error ? (
@@ -47,17 +49,7 @@ export default function SongsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {data.songs.map((song) => (
-              <Card key={song.id}>
-                <div className="mb-4">
-                  <h3 className="text-xl font-semibold">{song.title}</h3>
-                  <p className="text-gray-600">{song.artist}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {formatDuration(song.duration)} • Uploaded by{' '}
-                    {song.uploadedBy.username}
-                  </p>
-                </div>
-                <SongPlayer song={song} />
-              </Card>
+              <SongCard key={song.id} song={song} showPlayer={true} />
             ))}
           </div>
         )}
