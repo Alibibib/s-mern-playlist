@@ -48,7 +48,7 @@ describe('PubSubService', () => {
     it('should return async iterator for event', () => {
       const iterator = pubsubService.subscribe(Events.USER_CREATED);
       expect(iterator).toBeDefined();
-      expect(iterator[Symbol.asyncIterator]).toBeDefined();
+      expect(typeof iterator.next).toBe('function');
     });
   });
 
