@@ -79,7 +79,7 @@ describe('GraphQL Resolvers', () => {
         lastName: 'User',
       };
 
-      const result = await resolvers.Mutation.register(null, { input }, {} as any);
+      const result = await resolvers.Mutation.register(null, { input });
 
       expect(result.user).toBeDefined();
       expect(result.user.email).toBe(input.email);
@@ -102,7 +102,7 @@ describe('GraphQL Resolvers', () => {
       };
 
       await expect(
-        resolvers.Mutation.register(null, { input }, {} as any)
+        resolvers.Mutation.register(null, { input })
       ).rejects.toThrow(GraphQLError);
     });
 
@@ -116,7 +116,7 @@ describe('GraphQL Resolvers', () => {
       };
 
       await expect(
-        resolvers.Mutation.register(null, { input }, {} as any)
+        resolvers.Mutation.register(null, { input })
       ).rejects.toThrow();
     });
   });
@@ -128,7 +128,7 @@ describe('GraphQL Resolvers', () => {
         password: 'Test123!',
       };
 
-      const result = await resolvers.Mutation.login(null, { input }, {} as any);
+      const result = await resolvers.Mutation.login(null, { input });
 
       expect(result.user).toBeDefined();
       expect(result.user.email).toBe(testUser.email);
@@ -146,7 +146,7 @@ describe('GraphQL Resolvers', () => {
       };
 
       await expect(
-        resolvers.Mutation.login(null, { input }, {} as any)
+        resolvers.Mutation.login(null, { input })
       ).rejects.toThrow(GraphQLError);
     });
 
@@ -157,7 +157,7 @@ describe('GraphQL Resolvers', () => {
       };
 
       await expect(
-        resolvers.Mutation.login(null, { input }, {} as any)
+        resolvers.Mutation.login(null, { input })
       ).rejects.toThrow(GraphQLError);
     });
   });
