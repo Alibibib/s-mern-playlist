@@ -8,11 +8,16 @@ import { PlaylistList } from '@/components/playlist/playlist-list';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
 import { Error } from '@/components/ui/error';
+import type { Playlist } from '@/types';
+
+interface MyPlaylistsQueryData {
+  myPlaylists: Playlist[];
+}
 
 export default function PlaylistsPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const { data, loading, error } = useQuery(MY_PLAYLISTS_QUERY, {
+  const { data, loading, error } = useQuery<MyPlaylistsQueryData>(MY_PLAYLISTS_QUERY, {
     skip: !isAuthenticated,
   });
 
