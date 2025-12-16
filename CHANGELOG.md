@@ -12,36 +12,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Detailed API documentation (API_DOCUMENTATION.md)
 - Architecture documentation (ARCHITECTURE.md)
 - Contributing guidelines (CONTRIBUTING.md)
+- Real-time testing guide (REALTIME_TESTING.md)
 - MIT License file
 - This changelog file
 
 ## [1.0.0] - 2024-12-16
 
 ### Added
-- User authentication with JWT
-- User registration and login
-- Song upload with GridFS storage
-- Song management (create, list)
-- Playlist creation and management
-- Add songs to playlists
-- Remove songs from playlists
-- Reorder songs in playlists
-- Collaborative playlists with contributors
-- Role-based access control (Viewer, Editor, Admin)
-- Real-time updates via WebSocket subscriptions
-- Song streaming endpoint
-- GraphQL API with queries, mutations, and subscriptions
-- REST API for file uploads
-- Music upload HTML interface
-- Docker Compose setup for MongoDB
-- Mongo Express for database management
-- TypeScript support
-- ESLint configuration
-- Prettier configuration
-- Jest testing setup
-- Soft delete functionality
-- Health check endpoint
-- Russian language music upload guide (MUSIC_UPLOAD_GUIDE.md)
+- **Frontend Application (Next.js)**
+  - Next.js 16 with App Router
+  - React 19 components
+  - Apollo Client with WebSocket support
+  - Zustand state management
+  - TailwindCSS styling
+  - 8+ pages (home, login, register, playlists, songs, profile)
+  - Real-time subscriptions integration
+  - Form validation with react-hook-form + Zod
+  - Audio player component
+  - Responsive design
+- **Backend API**
+  - User authentication with JWT
+  - User registration and login
+  - Song upload with GridFS storage
+  - Song management (create, list)
+  - Playlist creation and management
+  - Add songs to playlists
+  - Remove songs from playlists
+  - Reorder songs in playlists
+  - Collaborative playlists with contributors
+  - Role-based access control (Viewer, Editor, Admin)
+  - Real-time updates via WebSocket subscriptions
+  - Song streaming endpoint
+  - GraphQL API with queries, mutations, and subscriptions
+  - REST API for file uploads
+- **Infrastructure**
+  - Docker Compose setup (MongoDB, Redis, Server, Client)
+  - Dockerfile for client
+  - Mongo Express for database management
+  - TypeScript support (server + client)
+  - ESLint configuration (server + client)
+  - Prettier configuration (server + client)
+  - Jest testing setup (48+ tests)
+  - Seed script for test data
+- **Documentation**
+  - Comprehensive README.md
+  - API documentation (API_DOCUMENTATION.md)
+  - Architecture documentation (ARCHITECTURE.md)
+  - Real-time testing guide (REALTIME_TESTING.md)
+  - Contributing guidelines (CONTRIBUTING.md)
+  - Quick start guide (QUICK_START.md)
+  - Music upload guide (MUSIC_UPLOAD_GUIDE.md) - Russian
+  - Documentation index (DOCS_INDEX.md)
 
 ### Security
 - Password hashing with bcryptjs

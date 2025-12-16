@@ -153,7 +153,7 @@
 
 **Статус: ✅ ВСЕ ЗАДАЧИ ПРИОРИТЕТА 2 ВЫПОЛНЕНЫ**
 
-Подробный отчет: [PRIORITY_2_COMPLETION_REPORT.md](PRIORITY_2_COMPLETION_REPORT.md)
+Подробный отчет: [PRIORITY_2_COMPLETION_REPORT.md](./PRIORITY_2_COMPLETION_REPORT.md)
 
 ---
 
@@ -167,7 +167,7 @@
 
 ## ✅ Заключение
 
-Проект **полностью соответствует** требованиям из IMPLEMENTATION_PLAN.md. 
+Проект **полностью соответствует** требованиям из [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md). 
 
 ### Выполнено:
 

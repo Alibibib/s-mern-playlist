@@ -38,6 +38,7 @@ Welcome to the MERN Music Playlist Manager documentation! This index will help y
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Technical architecture | Developers | 30-40 min |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines | Contributors | 15-20 min |
 | [CHANGELOG.md](CHANGELOG.md) | Version history | Everyone | 5 min |
+| [REALTIME_TESTING.md](REALTIME_TESTING.md) | Real-time testing guide | Developers | 15 min |
 | [LICENSE](LICENSE) | MIT License | Everyone | 2 min |
 
 ---
@@ -59,6 +60,7 @@ Welcome to the MERN Music Playlist Manager documentation! This index will help y
 │
 └── 📝 Reference
     ├── CHANGELOG.md ................. Version history
+    ├── REALTIME_TESTING.md .......... Real-time testing guide
     └── LICENSE ...................... MIT License
 ```
 
@@ -100,6 +102,8 @@ Welcome to the MERN Music Playlist Manager documentation! This index will help y
 | Learn about authentication | [ARCHITECTURE.md](ARCHITECTURE.md#authentication-flow) |
 | Set up Docker | [README.md](README.md#2-start-mongodb-with-docker) |
 | Run tests | [README.md](README.md#-testing) |
+| Test real-time subscriptions | [REALTIME_TESTING.md](REALTIME_TESTING.md) |
+| Set up frontend | [README.md](README.md#5-start-the-application) |
 | Report a bug | [CONTRIBUTING.md](CONTRIBUTING.md#-reporting-bugs) |
 | Suggest a feature | [CONTRIBUTING.md](CONTRIBUTING.md#-suggesting-features) |
 | See recent changes | [CHANGELOG.md](CHANGELOG.md) |
@@ -124,7 +128,7 @@ When the server is running, you can access:
 
 ## 🌍 Language Support
 
-- **English**: README.md, API_DOCUMENTATION.md, ARCHITECTURE.md, CONTRIBUTING.md, CHANGELOG.md, QUICK_START.md
+- **English**: README.md, API_DOCUMENTATION.md, ARCHITECTURE.md, CONTRIBUTING.md, CHANGELOG.md, QUICK_START.md, REALTIME_TESTING.md, client/README.md
 - **Russian**: MUSIC_UPLOAD_GUIDE.md
 
 ---
@@ -169,10 +173,16 @@ s-mern-playlist/
 ├── ARCHITECTURE.md ............... Technical docs
 ├── CONTRIBUTING.md ............... Contribution guide
 ├── CHANGELOG.md .................. Version history
+├── REALTIME_TESTING.md ........... Real-time subscriptions guide
+├── DOCS_INDEX.md ................. This file (documentation index)
 ├── LICENSE ....................... MIT License
-├── DOCS_INDEX.md ................. This file
-└── server/
-    └── README.md (future) ........ Server-specific docs
+├── docs/ ......................... Internal documentation
+│   ├── IMPLEMENTATION_PLAN.md .... Original implementation plan
+│   └── reports/ .................. Project completion reports
+├── server/
+│   └── (server-specific docs in code comments)
+└── client/
+    └── README.md ................. Frontend-specific docs
 ```
 
 ---

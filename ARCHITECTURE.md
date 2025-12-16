@@ -22,9 +22,12 @@ The MERN Music Playlist Manager is a full-stack application built using:
 - **MongoDB** - NoSQL database with GridFS for file storage
 - **Express.js** - Node.js web framework
 - **Node.js** - JavaScript runtime
+- **Next.js** - React framework for frontend (App Router)
 - **TypeScript** - Type-safe development
 - **GraphQL** - Flexible API layer
 - **WebSocket** - Real-time communication
+- **Apollo Client** - GraphQL client for frontend
+- **Zustand** - State management
 
 ### Key Features
 
@@ -40,8 +43,22 @@ The MERN Music Playlist Manager is a full-stack application built using:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                        Client Layer                      │
-│  (Web Browser, Mobile App, GraphQL Playground, etc.)   │
+│                    Frontend Layer (Next.js)              │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  Next.js App Router (React 19)                 │   │
+│  │  • Pages (/, /login, /playlists, etc.)          │   │
+│  │  • Components (UI, Auth, Playlist, Song)        │   │
+│  └─────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  Apollo Client                                   │   │
+│  │  • HTTP Link (queries/mutations)                │   │
+│  │  • WebSocket Link (subscriptions)                │   │
+│  └─────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  State Management (Zustand)                    │   │
+│  │  • Auth Store (JWT token, user)                │   │
+│  │  • UI Store (notifications, loading)           │   │
+│  └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
                             │
                     HTTP/WebSocket
@@ -130,11 +147,23 @@ The MERN Music Playlist Manager is a full-stack application built using:
 - graphql-subscriptions v2  // PubSub for subscriptions
 ```
 
+### Frontend Framework
+
+```typescript
+- Next.js v16          // React framework with App Router
+- React v19            // UI library
+- Apollo Client v4     // GraphQL client
+- Zustand v5           // State management
+- TailwindCSS v4       // Utility-first CSS
+- react-hook-form v7   // Form handling
+- Zod v4               // Schema validation
+```
+
 ### Development Tools
 
 ```typescript
 - TypeScript v5        // Static typing
-- ESLint v8            // Code linting
+- ESLint v8/v9         // Code linting
 - Prettier v3          // Code formatting
 - Jest v29             // Testing framework
 - Nodemon v3           // Development auto-reload

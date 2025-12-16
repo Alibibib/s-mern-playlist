@@ -17,37 +17,63 @@ This is a fast-track guide to get the MERN Music Playlist Manager up and running
 git clone https://github.com/Alibibib/s-mern-playlist.git
 cd s-mern-playlist
 
-# Start MongoDB with Docker
+# Start MongoDB and Redis with Docker
 docker-compose up -d
 
-# Install dependencies
+# Install backend dependencies
 cd server
+npm install
+
+# Install frontend dependencies (in another terminal or after)
+cd ../client
 npm install
 ```
 
 ### 2. Configure Environment (30 seconds)
 
+**Backend:**
 ```bash
-# Copy environment file
+cd server
 cp .env.example .env
-
 # Use default values for local development (already configured)
 ```
 
-### 3. Start the Server (30 seconds)
-
+**Frontend:**
 ```bash
-# Start in development mode
-npm run dev
+cd client
+cp .env.example .env.local
+# Use default values for local development (already configured)
 ```
 
+### 3. Start the Application (30 seconds)
+
+**Backend Server:**
+```bash
+cd server
+npm run dev
+```
 ✅ **Server running at:** `http://localhost:4000/graphql`
+
+**Frontend Client (in another terminal):**
+```bash
+cd client
+npm run dev
+```
+✅ **Frontend running at:** `http://localhost:3000`
 
 ## Quick Test
 
-### 1. Open GraphQL Playground
+### Option 1: Using Frontend (Recommended)
 
-Navigate to: `http://localhost:4000/graphql`
+1. **Open the frontend** at `http://localhost:3000`
+2. **Register a new user** or login with test credentials:
+   - Email: `alice@example.com`
+   - Password: `password123`
+3. **Create a playlist** and start adding songs!
+
+### Option 2: Using GraphQL Playground
+
+1. **Open GraphQL Playground** at `http://localhost:4000/graphql`
 
 ### 2. Register a User
 
@@ -121,13 +147,14 @@ curl -X POST http://localhost:4000/api/upload/upload \
 
 | Service | URL |
 |---------|-----|
+| **Frontend Application** | http://localhost:3000 |
 | GraphQL Playground | http://localhost:4000/graphql |
 | Mongo Express (DB GUI) | http://localhost:8081 |
-| Music Upload Interface | `file:///path/to/upload-music.html` |
 | Health Check | http://localhost:4000/health |
 
 ## Common Commands
 
+**Backend (server/):**
 ```bash
 # Start development server
 npm run dev
@@ -146,6 +173,24 @@ npm run build
 
 # Start production server
 npm start
+
+# Seed database with test data
+npm run seed
+```
+
+**Frontend (client/):**
+```bash
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Lint code
+npm run lint
 ```
 
 ## Docker Commands

@@ -2,6 +2,9 @@
 
 A full-stack music playlist management application built with the MERN stack (MongoDB, Express.js, React, Node.js) featuring real-time collaboration, file uploads with GridFS, and GraphQL API.
 
+**Frontend**: Next.js 16 with React 19, Apollo Client, and Zustand  
+**Backend**: Express.js with Apollo Server, MongoDB, and GraphQL Subscriptions
+
 ## ✨ Features
 
 - **🔐 User Authentication**: JWT-based authentication with secure password hashing
@@ -15,6 +18,16 @@ A full-stack music playlist management application built with the MERN stack (Mo
 - **🗑️ Soft Delete**: Non-destructive deletion with recovery options
 
 ## 🚀 Technology Stack
+
+### Frontend
+- **Next.js 16** - React framework with App Router
+- **React 19** - UI library
+- **TypeScript** - Type-safe JavaScript
+- **TailwindCSS** - Utility-first CSS framework
+- **Apollo Client** - GraphQL client with WebSocket support
+- **Zustand** - Lightweight state management
+- **react-hook-form** - Form handling
+- **Zod** - Schema validation
 
 ### Backend
 - **Node.js** - Runtime environment
@@ -32,6 +45,7 @@ A full-stack music playlist management application built with the MERN stack (Mo
 ### DevOps
 - **Docker & Docker Compose** - Containerization
 - **MongoDB Express** - Database GUI
+- **Redis** - Pub/Sub for subscriptions
 - **Jest** - Testing framework
 - **ESLint** - Code linting
 - **Prettier** - Code formatting
@@ -207,7 +221,13 @@ In GraphQL Playground, add the HTTP header:
 
 ### 4. Upload Music
 
-Open `upload-music.html` in your browser:
+**Option 1: Using Frontend (Recommended)**
+- Login to the frontend at `http://localhost:3000`
+- Navigate to Songs page
+- Use the upload form to upload music files
+
+**Option 2: Using Legacy HTML Interface**
+- Open `upload-music.html` in your browser
 - Enter your JWT token
 - Fill in song details (title, artist, duration)
 - Select an audio file
@@ -328,9 +348,13 @@ s-mern-playlist/
 │   ├── types/                # TypeScript types
 │   └── package.json          # Dependencies and scripts
 ├── docker-compose.yml        # Docker services configuration
-├── upload-music.html         # Music upload interface (legacy)
+├── upload-music.html         # Music upload interface (legacy, use frontend instead)
 ├── MUSIC_UPLOAD_GUIDE.md     # Detailed upload guide (Russian)
 ├── REALTIME_TESTING.md       # Real-time subscriptions testing guide
+├── DOCS_INDEX.md             # Documentation index
+├── docs/                     # Internal documentation
+│   ├── IMPLEMENTATION_PLAN.md # Original implementation plan
+│   └── reports/              # Project completion reports
 └── README.md                 # This file
 ```
 
