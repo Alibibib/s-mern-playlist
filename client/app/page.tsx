@@ -8,10 +8,37 @@ import { Error } from '@/components/ui/error';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
+import type { Playlist } from '@/types';
+
+interface PublicPlaylist {
+  id: string;
+  title: string;
+  description: string;
+  isPublic: boolean;
+  owner: {
+    username: string;
+    firstName: string;
+    lastName: string;
+  };
+  songs: {
+    id: string;
+    song: {
+      title: string;
+      artist: string;
+    };
+  }[];
+  contributors: never[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface PublicPlaylistsQueryData {
+  publicPlaylists: PublicPlaylist[];
+}
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
-  const { data, loading, error } = useQuery(PUBLIC_PLAYLISTS_QUERY);
+  const { data, loading, error } = useQuery<PublicPlaylistsQueryData>(PUBLIC_PLAYLISTS_QUERY);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -38,7 +65,18 @@ export default function Home() {
         ) : error ? (
           <Error message={error.message || 'Failed to load playlists'} />
         ) : (
-          <PlaylistList playlists={data?.publicPlaylists} />
+          <PlaylistList
+            playlists={
+              data?.publicPlaylists
+                ? (data.publicPlaylists.map((p) => ({
+                  ...p,
+                  isPublic: true,
+                  contributors: [],
+                  updatedAt: p.createdAt,
+                })) as unknown as Playlist[])
+                : undefined
+            }
+          />
         )}
       </div>
     </div>
