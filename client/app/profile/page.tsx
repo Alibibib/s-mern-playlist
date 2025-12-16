@@ -1,0 +1,97 @@
+'use client';
+
+import { useAuth } from '@/hooks/use-auth';
+import { useQuery } from '@apollo/client';
+import { ME_QUERY } from '@/lib/graphql/queries/auth.queries';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Loading } from '@/components/ui/loading';
+import { Error } from '@/components/ui/error';
+import { formatDate } from '@/lib/utils/format';
+import { useRouter } from 'next/navigation';
+
+export default function ProfilePage() {
+  const router = useRouter();
+  const { user, logout, isAuthenticated } = useAuth();
+  const { data, loading, error } = useQuery(ME_QUERY, {
+    skip: !isAuthenticated,
+  });
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Please login</h1>
+          <Button onClick={() => router.push('/login')}>Go to Login</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const displayUser = data?.me || user;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <Loading />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <Error message={error.message || 'Failed to load profile'} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Profile</h1>
+        <Card>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">
+                Username
+              </label>
+              <p className="text-lg">{displayUser?.username}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Email</label>
+              <p className="text-lg">{displayUser?.email}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">
+                First Name
+              </label>
+              <p className="text-lg">{displayUser?.firstName}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">
+                Last Name
+              </label>
+              <p className="text-lg">{displayUser?.lastName}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">
+                Member Since
+              </label>
+              <p className="text-lg">
+                {displayUser?.createdAt
+                  ? formatDate(displayUser.createdAt)
+                  : 'N/A'}
+              </p>
+            </div>
+            <div className="pt-4 border-t">
+              <Button variant="danger" onClick={logout}>
+                Logout
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
