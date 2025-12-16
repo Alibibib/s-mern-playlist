@@ -11,7 +11,18 @@ import { Loading } from '@/components/ui/loading';
 import { Error } from '@/components/ui/error';
 import { Card } from '@/components/ui/card';
 import { useUIStore } from '@/lib/store/ui-store';
-import { formatDate } from '@/lib/utils/format';
+import { PlaylistDetail } from '@/components/playlist/playlist-detail';
+
+function getErrorMessage(error: unknown, fallback = 'Unknown error'): string {
+  if (error instanceof Error) {
+    return (error as Error).message || fallback;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message: unknown }).message;
+    return typeof message === 'string' ? message : fallback;
+  }
+  return fallback;
+}
 
 export default function PlaylistDetailPage() {
   const params = useParams();
@@ -37,9 +48,8 @@ export default function PlaylistDetailPage() {
         type: 'success',
       });
       refetch();
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to remove song';
+    } catch (err) {
+      const errorMessage = getErrorMessage(err, 'Failed to remove song');
       addNotification({
         message: errorMessage,
         type: 'error',
@@ -76,28 +86,7 @@ export default function PlaylistDetailPage() {
       <div className="max-w-4xl mx-auto">
         <Card className="mb-8">
           <div className="flex justify-between items-start mb-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{playlist.title}</h1>
-              {playlist.description && (
-                <p className="text-gray-600 mb-4">{playlist.description}</p>
-              )}
-              <div className="flex items-center gap-4 text-sm text-gray-500">
-                <span>
-                  Created by {playlist.owner.firstName}{' '}
-                  {playlist.owner.lastName}
-                </span>
-                <span>•</span>
-                <span>{formatDate(playlist.createdAt)}</span>
-                {playlist.isPublic && (
-                  <>
-                    <span>•</span>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
-                      Public
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
+            <PlaylistDetail playlist={playlist} />
             {isOwner && (
               <div className="flex gap-2">
                 <Button
