@@ -19,25 +19,36 @@ export function useSubscription<
 ) {
   const { addNotification } = useUIStore();
 
-  const subscriptionOptions = {
-    ...(options?.variables && { variables: options.variables }),
-    ...(options?.skip !== undefined && { skip: options.skip }),
-    onError: (error: Error | { message?: string }) => {
-      console.error('Subscription error:', error);
-      addNotification({
-        message: 'Connection error. Trying to reconnect...',
-        type: 'error',
-      });
-      if (options?.onError) {
-        const errorInstance =
-          error instanceof Error ? error : new Error(error.message || 'Unknown error');
-        options.onError(errorInstance);
-      }
-    },
+  // Build options object conditionally to satisfy Apollo's conditional overloads
+  const subscriptionOptions: {
+    variables?: TVariables;
+    skip?: boolean;
+    onError?: (error: Error) => void;
+  } = {};
+
+  if (options?.variables) {
+    subscriptionOptions.variables = options.variables;
+  }
+
+  if (options?.skip !== undefined) {
+    subscriptionOptions.skip = options.skip;
+  }
+
+  subscriptionOptions.onError = (error: Error) => {
+    console.error('Subscription error:', error);
+    addNotification({
+      message: 'Connection error. Trying to reconnect...',
+      type: 'error',
+    });
+    if (options?.onError) {
+      options.onError(error);
+    }
   };
 
+  // Type assertion needed due to Apollo's conditional overload types
   const { data, loading, error } = useApolloSubscription<TData, TVariables>(
     subscription,
+    // @ts-expect-error - Apollo's conditional overload types are complex
     subscriptionOptions
   );
 

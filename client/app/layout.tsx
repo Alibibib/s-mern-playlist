@@ -1,11 +1,12 @@
 'use client';
 
 import { Geist, Geist_Mono } from 'next/font/google';
-import { ApolloProvider } from '@apollo/client';
+import { ApolloProvider } from '@apollo/client/react';
 import { apolloClient } from '@/lib/apollo/client';
 import { Navbar } from '@/components/ui/navbar';
 import { Notifications } from '@/components/ui/notifications';
 import './globals.css';
+import React from "react";
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
