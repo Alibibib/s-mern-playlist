@@ -9,7 +9,7 @@ import Song, { ISong } from '../models/Song';
 import PlaylistSong, { IPlaylistSong } from '../models/PlaylistSong';
 import Contributor, { IContributor, ContributorRole } from '../models/Contributor';
 import { deleteFileFromGridFS } from '../utils/gridfs';
-import { Events, pubsubService } from '../services/pubsub.service';
+import { Events, pubsubService } from '../services';
 import {
     addContributorSchema,
     createPlaylistSchema,
@@ -19,8 +19,8 @@ import {
     updatePlaylistSchema,
     songIdsArraySchema,
     mongoIdSchema,
-} from '../validation/schemas';
-import { validate } from '../validation/validate';
+} from '../validation';
+import { validate } from '../validation';
 
 interface Context {
     user?: {
@@ -269,7 +269,24 @@ export const resolvers = {
                 });
             }
 
-            const playlists = await Playlist.find({ isDeleted: false });
+            // Find playlists the user can access:
+            // 1. Public playlists
+            // 2. Playlists owned by the user
+            // 3. Playlists where the user is a contributor
+            const userContributorPlaylists = await Contributor.find({
+                userId: context.user.id,
+                isDeleted: false,
+            }).distinct('playlistId');
+
+            const playlists = await Playlist.find({
+                isDeleted: false,
+                $or: [
+                    { isPublic: true },
+                    { ownerId: context.user.id },
+                    { _id: { $in: userContributorPlaylists } },
+                ],
+            });
+
             return playlists.map(formatPlaylist);
         },
 
