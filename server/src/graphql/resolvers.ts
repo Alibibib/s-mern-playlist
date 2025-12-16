@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { GraphQLError } from 'graphql';
 import { PubSub, withFilter } from 'graphql-subscriptions';
 import User, { IUser } from '../models/User';
@@ -7,6 +8,7 @@ import Playlist, { IPlaylist } from '../models/Playlist';
 import Song, { ISong } from '../models/Song';
 import PlaylistSong, { IPlaylistSong } from '../models/PlaylistSong';
 import Contributor, { IContributor, ContributorRole } from '../models/Contributor';
+import { deleteFileFromGridFS } from '../utils/gridfs';
 
 const pubsub = new PubSub();
 
@@ -654,32 +656,48 @@ export const resolvers = {
                 });
             }
 
-            // Check if song already in playlist
-            const existing = await PlaylistSong.findOne({
+            // Check if song already active in playlist
+            const existingActive = await PlaylistSong.findOne({
                 playlistId,
                 songId,
                 isDeleted: false
             });
 
-            if (existing) {
+            if (existingActive) {
                 throw new GraphQLError('Song already in playlist', {
                     extensions: { code: 'DUPLICATE' },
                 });
             }
+
+            // Check for soft-deleted entry to restore
+            const existingDeleted = await PlaylistSong.findOne({
+                playlistId,
+                songId,
+                isDeleted: true
+            });
 
             // Get next order number
             const lastSong = await PlaylistSong.findOne({ playlistId, isDeleted: false })
                 .sort({ order: -1 });
             const nextOrder = lastSong ? lastSong.order + 1 : 0;
 
-            const newPlaylistSong = new PlaylistSong({
-                playlistId,
-                songId,
-                addedBy: context.user.id,
-                order: nextOrder,
-            });
+            let savedPlaylistSong: IPlaylistSong;
 
-            const savedPlaylistSong = await newPlaylistSong.save();
+            if (existingDeleted) {
+                existingDeleted.isDeleted = false;
+                existingDeleted.order = nextOrder;
+                existingDeleted.addedBy = new mongoose.Types.ObjectId(context.user.id);
+                savedPlaylistSong = await existingDeleted.save();
+            } else {
+                const newPlaylistSong = new PlaylistSong({
+                    playlistId,
+                    songId,
+                    addedBy: context.user.id,
+                    order: nextOrder,
+                });
+
+                savedPlaylistSong = await newPlaylistSong.save();
+            }
 
             // Publish real-time update
             pubsub.publish(SONG_ADDED_TO_PLAYLIST, {
@@ -721,6 +739,95 @@ export const resolvers = {
                 songRemovedFromPlaylist: songId,
                 playlistId,
             });
+
+            return true;
+        },
+
+        deleteSong: async (_: any, { id }: { id: string }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            const song = await Song.findOne({ _id: id, isDeleted: false });
+
+            if (!song) {
+                throw new GraphQLError('Song not found', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            if (song.uploadedBy.toString() !== context.user.id) {
+                throw new GraphQLError('Not authorized', {
+                    extensions: { code: 'FORBIDDEN' },
+                });
+            }
+
+            await Song.findByIdAndUpdate(id, { isDeleted: true, deletedAt: new Date() });
+            await PlaylistSong.updateMany({ songId: id, isDeleted: false }, { isDeleted: true });
+
+            return true;
+        },
+
+        restoreSong: async (_: any, { id }: { id: string }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            const song = await Song.findOne({ _id: id, isDeleted: true });
+
+            if (!song) {
+                throw new GraphQLError('Song not found or not deleted', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            if (song.uploadedBy.toString() !== context.user.id) {
+                throw new GraphQLError('Not authorized', {
+                    extensions: { code: 'FORBIDDEN' },
+                });
+            }
+
+            song.isDeleted = false;
+            song.deletedAt = null;
+            const restored = await song.save();
+
+            return formatSong(restored);
+        },
+
+        hardDeleteSong: async (_: any, { id }: { id: string }, context: Context) => {
+            if (!context.user) {
+                throw new GraphQLError('Not authenticated', {
+                    extensions: { code: 'UNAUTHENTICATED' },
+                });
+            }
+
+            const song = await Song.findById(id);
+
+            if (!song) {
+                throw new GraphQLError('Song not found', {
+                    extensions: { code: 'NOT_FOUND' },
+                });
+            }
+
+            if (song.uploadedBy.toString() !== context.user.id) {
+                throw new GraphQLError('Not authorized', {
+                    extensions: { code: 'FORBIDDEN' },
+                });
+            }
+
+            // Attempt to delete GridFS file; if missing, continue with data cleanup
+            try {
+                await deleteFileFromGridFS(song.fileId.toString());
+            } catch (error) {
+                console.error('Failed to delete file from GridFS:', error);
+            }
+
+            await PlaylistSong.deleteMany({ songId: id });
+            await Song.findByIdAndDelete(id);
 
             return true;
         },
@@ -773,27 +880,43 @@ export const resolvers = {
                 });
             }
 
-            // Check if already contributor
-            const existing = await Contributor.findOne({
+            // Check if already active contributor
+            const existingActive = await Contributor.findOne({
                 playlistId: input.playlistId,
                 userId: input.userId,
                 isDeleted: false
             });
 
-            if (existing) {
+            if (existingActive) {
                 throw new GraphQLError('User is already a contributor', {
                     extensions: { code: 'DUPLICATE' },
                 });
             }
 
-            const newContributor = new Contributor({
+            // Check for soft-deleted contributor to restore
+            const existingDeleted = await Contributor.findOne({
                 playlistId: input.playlistId,
                 userId: input.userId,
-                role: input.role,
-                invitedBy: context.user.id,
+                isDeleted: true
             });
 
-            const savedContributor = await newContributor.save();
+            let savedContributor: IContributor;
+
+            if (existingDeleted) {
+                existingDeleted.isDeleted = false;
+                existingDeleted.role = input.role;
+                existingDeleted.invitedBy = new mongoose.Types.ObjectId(context.user.id);
+                savedContributor = await existingDeleted.save();
+            } else {
+                const newContributor = new Contributor({
+                    playlistId: input.playlistId,
+                    userId: input.userId,
+                    role: input.role,
+                    invitedBy: context.user.id,
+                });
+
+                savedContributor = await newContributor.save();
+            }
 
             // Publish real-time update
             pubsub.publish(CONTRIBUTOR_ADDED, {

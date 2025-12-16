@@ -14,6 +14,7 @@ import { resolvers } from './graphql/resolvers';
 import { getContextUser } from './middleware/auth';
 import { initGridFS } from './utils/gridfs';
 import uploadRoutes from './routes/upload';
+import { cleanupOldDeletedSongs, startCleanupScheduler } from './utils/cleanup';
 
 dotenv.config();
 
@@ -116,7 +117,34 @@ const startServer = async () => {
         res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
     });
 
+    app.post('/api/admin/cleanup', async (req, res) => {
+        const adminKey = req.headers['x-admin-key'];
+        if (adminKey !== process.env.ADMIN_KEY) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        const daysOld = parseInt(req.query.days as string) || 30;
+
+        try {
+            const result = await cleanupOldDeletedSongs(daysOld);
+            res.json({ success: true, ...result });
+        } catch (error) {
+            res.status(500).json({
+                error: 'Cleanup failed',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
+    });
+
     const PORT = process.env.PORT || 4000;
+
+    if (process.env.ENABLE_CLEANUP_SCHEDULER === 'true') {
+        const days = process.env.CLEANUP_DAYS ? parseInt(process.env.CLEANUP_DAYS, 10) : 30;
+        const intervalHours = process.env.CLEANUP_INTERVAL_HOURS
+            ? parseInt(process.env.CLEANUP_INTERVAL_HOURS, 10)
+            : 24;
+        startCleanupScheduler(days, intervalHours);
+    }
 
     httpServer.listen(PORT, () => {
         console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);

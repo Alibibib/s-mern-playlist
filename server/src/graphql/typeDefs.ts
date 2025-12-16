@@ -143,6 +143,9 @@ export const typeDefs = `#graphql
     addSongToPlaylist(playlistId: ID!, songId: ID!): PlaylistSong!
     removeSongFromPlaylist(playlistId: ID!, songId: ID!): Boolean!
     reorderPlaylistSongs(playlistId: ID!, songIds: [ID!]!): [PlaylistSong!]!
+    deleteSong(id: ID!): Boolean!
+    restoreSong(id: ID!): Song!
+    hardDeleteSong(id: ID!): Boolean!
 
     # Contributor mutations
     addContributor(input: AddContributorInput!): Contributor!

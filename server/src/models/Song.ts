@@ -7,6 +7,7 @@ export interface ISong extends Document {
     fileId: mongoose.Types.ObjectId; // GridFS file reference
     uploadedBy: mongoose.Types.ObjectId;
     isDeleted: boolean;
+    deletedAt?: Date | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -45,6 +46,11 @@ const SongSchema: Schema = new Schema({
     isDeleted: {
         type: Boolean,
         default: false,
+        index: true
+    },
+    deletedAt: {
+        type: Date,
+        default: null,
         index: true
     }
 }, { timestamps: true });
