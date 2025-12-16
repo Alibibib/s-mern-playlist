@@ -2,6 +2,8 @@
 
 A full-stack music playlist management application built with the MERN stack (MongoDB, Express.js, React, Node.js) featuring real-time collaboration, file uploads with GridFS, and GraphQL API.
 
+> 🚀 **New to this project?** Check out the [Quick Start Guide](QUICK_START.md) for a 5-minute setup!
+
 ## ✨ Features
 
 - **🔐 User Authentication**: JWT-based authentication with secure password hashing
@@ -340,7 +342,12 @@ npm run format
 
 ## 📚 Additional Documentation
 
+- **[Quick Start Guide](QUICK_START.md)** - 5-minute setup guide for getting started quickly
 - **[Music Upload Guide](MUSIC_UPLOAD_GUIDE.md)** - Detailed guide for uploading and managing music (Russian)
+- **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference for all endpoints
+- **[Architecture Documentation](ARCHITECTURE.md)** - Technical architecture and design decisions
+- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to this project
+- **[Changelog](CHANGELOG.md)** - Version history and release notes
 - **[GraphQL Playground](http://localhost:4000/graphql)** - Interactive API documentation (when server is running)
 
 ## 🐳 Docker Commands
