@@ -1023,20 +1023,22 @@ export const resolvers = {
             ),
         },
         songAddedToPlaylist: {
-            subscribe: withFilter(
-                () => pubsubService.subscribe(Events.SONG_ADDED_TO_PLAYLIST),
-                async (payload: any, variables: { playlistId: string }, context: Context) => {
-                    if (payload.playlistId !== variables.playlistId) return false;
-                    if (!context?.user?.id) return false;
+            songAddedToPlaylist: {
+                subscribe: withFilter(
+                    () => pubsubService.subscribe(Events.SONG_ADDED_TO_PLAYLIST),
+                    async (payload: any, variables: { playlistId: string }, context: Context) => {
+                        if (payload.playlistId !== variables.playlistId) return false;
+                        if (!context?.user?.id) return false;
 
-                    try {
-                        await checkPlaylistAccess(variables.playlistId, context.user.id);
-                        return true;
-                    } catch {
-                        return false;
+                        try {
+                            await checkPlaylistAccess(variables.playlistId, context.user.id);
+                            return true;
+                        } catch {
+                            return false;
+                        }
                     }
-                }
-            ),
+                ),
+            },
         },
         songRemovedFromPlaylist: {
             subscribe: withFilter(

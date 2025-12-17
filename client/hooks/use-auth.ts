@@ -13,22 +13,24 @@ interface MeQueryData {
 
 export function useAuth() {
   const router = useRouter();
-  const { token, user, login, logout, setUser } = useAuthStore();
+  const { token, user, login, logout, setUser, _hasHydrated } = useAuthStore();
   const isAuthenticated = useIsAuthenticated();
 
   // Загружаем данные пользователя если есть токен
-  const { data, loading, error } = useQuery<MeQueryData>(ME_QUERY, {
+  const { data, loading: queryLoading, error } = useQuery<MeQueryData>(ME_QUERY, {
     skip: !token,
   });
 
   useEffect(() => {
+    console.log('🔄 useAuth Effect:', { token: !!token, hasData: !!data?.me, error });
     if (token && data?.me) {
       setUser(data.me);
     }
-  }, [token, data, setUser]);
+  }, [token, data, setUser, error]);
 
   useEffect(() => {
     if (error) {
+      console.error('❌ useAuth Error:', error);
       // Если токен невалидный, выходим
       logout();
     }
@@ -43,7 +45,7 @@ export function useAuth() {
     user,
     token,
     isAuthenticated,
-    loading,
+    loading: queryLoading || !_hasHydrated,
     error,
     login,
     logout: handleLogout,

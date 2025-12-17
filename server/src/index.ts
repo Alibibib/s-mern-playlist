@@ -73,7 +73,8 @@ const startServer = async () => {
                 connectionManager.onSubscribe(ctx, msg.id);
             },
             context: async (ctx) => {
-                const connectionContext = ctx.extra as unknown as ConnectionContext;
+                // The onConnect return value is merged into connectionParams
+                const connectionContext = ctx.connectionParams as unknown as ConnectionContext;
                 return {
                     user: connectionContext?.user || null,
                     connectionId: connectionContext?.connectionId,
