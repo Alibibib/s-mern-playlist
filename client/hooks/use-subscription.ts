@@ -48,7 +48,6 @@ export function useSubscription<
   // Type assertion needed due to Apollo's conditional overload types
   const { data, loading, error } = useApolloSubscription<TData, TVariables>(
     subscription,
-    // @ts-expect-error - Apollo's conditional overload types are complex
     subscriptionOptions
   );
 

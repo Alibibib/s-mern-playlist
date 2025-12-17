@@ -5,6 +5,7 @@ import { ApolloProvider } from '@apollo/client/react';
 import { apolloClient } from '@/lib/apollo/client';
 import { Navbar } from '@/components/ui/navbar';
 import { Notifications } from '@/components/ui/notifications';
+import { AudioPlayer } from '@/components/player/audio-player';
 import './globals.css';
 import React from "react";
 
@@ -36,12 +37,13 @@ export default function RootLayout({
         </div>
 
         <ApolloProvider client={apolloClient}>
-          <div className="relative z-10 min-h-screen flex flex-col">
+          <div className="relative z-10 min-h-screen flex flex-col pb-24">
             <Navbar />
             <Notifications />
             <main className="flex-1">
               {children}
             </main>
+            <AudioPlayer />
           </div>
         </ApolloProvider>
       </body>
