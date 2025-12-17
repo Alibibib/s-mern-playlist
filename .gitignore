@@ -13,7 +13,11 @@ package-lock.json
 
 # Build outputs
 /dist
+server/dist
+client/dist
 /build
+server/build
+client/build
 /out
 .next/
 

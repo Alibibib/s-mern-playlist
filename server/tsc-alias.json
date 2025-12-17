@@ -1,0 +1,9 @@
+{
+  "replacers": {
+    "default": {
+      "enabled": true
+    }
+  },
+  "resolveFullPaths": true,
+  "verbose": false
+}
