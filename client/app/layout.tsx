@@ -26,12 +26,23 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased selection:bg-violet-500/30 selection:text-white`}
       >
+        <div className="fixed inset-0 z-[-1] bg-[#0a0a0a]">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-violet-900/20 blur-[120px] animate-mesh" />
+          <div className="absolute top-[20%] right-[-10%] w-[30%] h-[50%] rounded-full bg-fuchsia-900/10 blur-[100px] animate-mesh [animation-delay:2s]" />
+          <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[40%] rounded-full bg-indigo-900/10 blur-[130px] animate-mesh [animation-delay:4s]" />
+          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
+        </div>
+
         <ApolloProvider client={apolloClient}>
-          <Navbar />
-          <Notifications />
-          {children}
+          <div className="relative z-10 min-h-screen flex flex-col">
+            <Navbar />
+            <Notifications />
+            <main className="flex-1">
+              {children}
+            </main>
+          </div>
         </ApolloProvider>
       </body>
     </html>
