@@ -66,43 +66,54 @@ export function RegisterForm() {
   };
 
   return (
-    <Card className="max-w-md mx-auto mt-8">
-      <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <Card variant="glass" className="max-w-md mx-auto mt-8 border-violet-500/20">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Create Account</h2>
+        <p className="text-gray-400 text-sm mt-2">Join usage today</p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <Input
           label="Username"
           {...register('username')}
           error={errors.username?.message}
+          placeholder="username"
         />
         <Input
           label="Email"
           type="email"
           {...register('email')}
           error={errors.email?.message}
+          placeholder="your@email.com"
         />
         <Input
           label="Password"
           type="password"
           {...register('password')}
           error={errors.password?.message}
+          placeholder="••••••••"
         />
-        <Input
-          label="First Name"
-          {...register('firstName')}
-          error={errors.firstName?.message}
-        />
-        <Input
-          label="Last Name"
-          {...register('lastName')}
-          error={errors.lastName?.message}
-        />
-        <Button type="submit" isLoading={loading} className="w-full">
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="First Name"
+            {...register('firstName')}
+            error={errors.firstName?.message}
+            placeholder="John"
+          />
+          <Input
+            label="Last Name"
+            {...register('lastName')}
+            error={errors.lastName?.message}
+            placeholder="Doe"
+          />
+        </div>
+        <Button variant="glow" type="submit" isLoading={loading} className="w-full mt-2">
           Register
         </Button>
       </form>
-      <p className="mt-4 text-center text-sm text-gray-600">
+      <p className="mt-6 text-center text-sm text-gray-400">
         Already have an account?{' '}
-        <a href="/login" className="text-blue-600 hover:underline">
+        <a href="/login" className="text-violet-400 hover:text-violet-300 hover:underline transition-colors font-medium">
           Login
         </a>
       </p>

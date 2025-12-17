@@ -1,5 +1,5 @@
 import { ApolloClient, InMemoryCache, ApolloLink, HttpLink } from '@apollo/client';
-import { SetContextLink } from '@apollo/client/link/context';
+import { setContext } from '@apollo/client/link/context';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
@@ -12,7 +12,7 @@ const httpLink = new HttpLink({
 });
 
 // Auth Link для добавления JWT токена
-const authLink = new SetContextLink(({ headers = {} }) => {
+const authLink = setContext((_, { headers }) => {
   // Получаем токен из store (синхронно)
   const token = useAuthStore.getState().token;
 

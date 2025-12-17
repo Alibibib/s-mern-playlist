@@ -20,8 +20,8 @@ export function PlaylistList({ playlists, loading, error }: PlaylistListProps) {
 
   if (!playlists || playlists.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        No playlists found
+      <div className="text-center py-12 text-gray-400 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
+        <p className="text-lg">No playlists found</p>
       </div>
     );
   }

@@ -64,28 +64,34 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="max-w-md mx-auto mt-8">
-      <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <Card variant="glass" className="max-w-md mx-auto mt-8 border-violet-500/20">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Welcome Back</h2>
+        <p className="text-gray-400 text-sm mt-2">Sign in to your account</p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Input
           label="Email"
           type="email"
           {...register('email')}
           error={errors.email?.message}
+          placeholder="your@email.com"
         />
         <Input
           label="Password"
           type="password"
           {...register('password')}
           error={errors.password?.message}
+          placeholder="••••••••"
         />
-        <Button type="submit" isLoading={loading} className="w-full">
+        <Button variant="glow" type="submit" isLoading={loading} className="w-full">
           Login
         </Button>
       </form>
-      <p className="mt-4 text-center text-sm text-gray-600">
+      <p className="mt-6 text-center text-sm text-gray-400">
         Don&#39;t have an account?{' '}
-        <a href="/register" className="text-blue-600 hover:underline">
+        <a href="/register" className="text-violet-400 hover:text-violet-300 hover:underline transition-colors font-medium">
           Register
         </a>
       </p>
