@@ -338,13 +338,8 @@ export const resolvers = {
             return playlists.map(formatPlaylist);
         },
 
-        publicPlaylists: async (_: any, __: any, context: Context) => {
-            if (!context.user) {
-                throw new GraphQLError('Not authenticated', {
-                    extensions: { code: 'UNAUTHENTICATED' },
-                });
-            }
-
+        publicPlaylists: async () => {
+            // Public playlists are accessible without authentication
             const playlists = await Playlist.find({
                 isPublic: true,
                 isDeleted: false

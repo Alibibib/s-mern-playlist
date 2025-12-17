@@ -2,7 +2,7 @@
   "name": "mern-server",
   "version": "1.0.0",
   "scripts": {
-    "dev": "nodemon --exec ts-node src/index.ts",
+    "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest --coverage",
@@ -26,6 +26,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.20.2",
     "multer": "^2.0.2",
+    "tsconfig-paths": "^4.2.0",
     "ws": "^8.18.3",
     "zod": "^3.23.8"
   },
