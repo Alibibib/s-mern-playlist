@@ -1,3 +1,5 @@
+Presentation: https://www.canva.com/design/DAG7vXq98pg/H7JPONq9IQxED8Kwggc-Bg/view?utm_content=DAG7vXq98pg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hdfb5459897
+
 # 🎵 MERN Music Playlist Manager
 
 A full-stack music playlist management application built with the MERN stack (MongoDB, Express.js, React, Node.js) featuring real-time collaboration, file uploads with GridFS, and GraphQL API.
