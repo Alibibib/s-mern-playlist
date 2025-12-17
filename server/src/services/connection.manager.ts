@@ -1,5 +1,5 @@
 import { Context } from 'graphql-ws';
-import { authenticateToken, JWTPayload } from '@middleware/auth';
+import { authenticateToken, JWTPayload } from '@/middleware/auth';
 import { pubsubService } from './pubsub.service';
 
 export interface ConnectionContext {

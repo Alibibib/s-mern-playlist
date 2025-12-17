@@ -31,7 +31,7 @@ Thumbs.db
 .idea/
 
 # Testing
-/coverage
+server/coverage
 
 # Temporary files
 *.log
